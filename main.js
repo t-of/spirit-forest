@@ -286,16 +286,12 @@ function computeScore() {
   const scores = G.players.map(() => 0);
   CATEGORIES.forEach((c) => {
     const tileOnly = G.players.map((_, p) => totals[p][c] - (G.players[p].tokens[c] || 0));
-    const totalTileMarks = tileOnly.reduce((a, b) => a + b, 0);
-    if (totalTileMarks === 0) {
-      G.players.forEach((_, p) => { scores[p] -= 3; });
-      perCat[c] = { max: 0, winners: [], penalty: true };
-      return;
-    }
+    const penalized = G.players.map((_, p) => p).filter((p) => tileOnly[p] === 0);
+    penalized.forEach((p) => { scores[p] -= 3; });
     const max = Math.max(...G.players.map((_, p) => totals[p][c]));
     const winners = G.players.map((_, p) => p).filter((p) => totals[p][c] === max && max > 0);
     winners.forEach((p) => { scores[p] += max; });
-    perCat[c] = { max, winners, penalty: false };
+    perCat[c] = { max, winners, penalized };
   });
   return { totals, scores, perCat };
 }
@@ -421,7 +417,7 @@ function renderResult() {
       <table class="board">
         <thead><tr><th></th>${G.players.map((_, p) => `<th style="color:${PLAYER_COLORS[p]}">P${p + 1}</th>`).join('')}</tr></thead>
         <tbody>
-          ${CATEGORIES.map((c) => `<tr><td>${INFO[c].label}${perCat[c].penalty ? '(−3)' : ''}</td>${G.players.map((_, p) => `<td>${perCat[c].winners.includes(p) ? perCat[c].max : (perCat[c].penalty ? -3 : 0)}</td>`).join('')}</tr>`).join('')}
+          ${CATEGORIES.map((c) => `<tr><td>${INFO[c].label}</td>${G.players.map((_, p) => `<td>${(perCat[c].winners.includes(p) ? perCat[c].max : 0) - (perCat[c].penalized.includes(p) ? 3 : 0)}</td>`).join('')}</tr>`).join('')}
           <tr class="total"><td>合計</td>${scores.map((s) => `<td>${s}</td>`).join('')}</tr>
         </tbody>
       </table>
