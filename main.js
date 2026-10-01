@@ -189,6 +189,10 @@ function allEnds() {
   return out;
 }
 
+// 札の下の数字＝その精霊の記号が 48 枚全体にいくつあるか（風 10 … 苔 5）
+const SPECIES_TOTAL = {};
+TILE_TEXT.flat(2).forEach((m) => { SPECIES_TOTAL[m] = (SPECIES_TOTAL[m] || 0) + 1; });
+
 function speciesOf(tile) { return tile.marks.find((m) => SPECIES.includes(m)); }
 function isPair(tile) { return tile.marks.length === 2 && SPECIES.includes(tile.marks[0]) && tile.marks[0] === tile.marks[1]; }
 
@@ -436,7 +440,7 @@ function render() {
         return `<button class="tile ${active ? 'active' : 'dim'}" data-id="${t.id}" ${active ? '' : 'disabled'}>
           <span class="tile__bg">${tilePatternSvg(sp, t.id)}</span>
           ${tileBadgesHtml(t)}
-          <span class="tile__num">${t.marks.length}</span>
+          <span class="tile__num">${SPECIES_TOTAL[sp]}</span>
           ${t.gem != null ? `<span class="tile__gem ${t.id === G.lastGemTile ? 'tile__gem--new' : ''}">${gemSvg(PLAYER_COLORS[t.gem], 18)}</span>` : ''}
           ${t.token ? '<span class="tile__token">?</span>' : ''}
         </button>`;
