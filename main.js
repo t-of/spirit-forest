@@ -255,6 +255,14 @@ function coinHtml(key, size = 22) {
 }
 let gemSeq = 0;
 function gemSvg(color, size = 20) {
+  // 幾何: プレイヤーの色で塗った五芒星。同じ色の札の上でも見えるよう、生成りの縁どりを付ける
+  if (theme === 'geo') {
+    const pts = Array.from({ length: 10 }, (_, i) => {
+      const a = -Math.PI / 2 + (i * Math.PI) / 5, r = i % 2 ? 4.4 : 10.5;
+      return `${(12 + r * Math.cos(a)).toFixed(2)} ${(12.8 + r * Math.sin(a)).toFixed(2)}`;
+    }).join(' ');
+    return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true"><polygon points="${pts}" fill="${color}" stroke="#F4EEE1" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+  }
   const id = 'gemg' + (gemSeq++);
   return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="filter:drop-shadow(0 2px 3px ${color}88)">
     <defs><radialGradient id="${id}" cx="35%" cy="28%" r="75%">
