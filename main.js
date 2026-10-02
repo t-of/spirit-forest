@@ -273,11 +273,12 @@ function newGame(numPlayers) {
   spots.forEach((tile, i) => { tile.token = tokens[i]; });
 
   const gemsEach = numPlayers <= 2 ? 3 : 2;
-  const players = Array.from({ length: numPlayers }, () => ({
+  const players = Array.from({ length: numPlayers }, (_, i) => ({
     gemsHand: gemsEach,
     gemsExcluded: 0,
     tokens: {}, // category -> 枚数（'plus' も含む）
     tilesTaken: 0,
+    cpu: cpuOn && i > 0,
   }));
 
   return {
@@ -397,7 +398,7 @@ function takeTile(tile) {
 function animateTakeAndCommit(btnEl, tile) {
   if (reducedMotion() || !btnEl || !btnEl.animate) { takeTile(tile); return; }
   const startRect = btnEl.getBoundingClientRect();
-  const destEl = stage.querySelector('.board th.cur');
+  const destEl = stage.querySelector('.hand.cur');
   const destRect = destEl ? destEl.getBoundingClientRect() : { left: startRect.left, top: startRect.top - 80, width: startRect.width, height: startRect.height };
   const dx = (destRect.left + destRect.width / 2) - (startRect.left + startRect.width / 2);
   const dy = (destRect.top + destRect.height / 2) - (startRect.top + startRect.height / 2);
@@ -635,10 +636,10 @@ function render() {
   }
 
   stage.innerHTML = `
-    <div class="game">
+    <div class="game ${pl.cpu ? 'cpu-turn' : ''}">
       <div class="turn-row">
         <button class="pill back-btn" id="btn-back" aria-label="最初の画面に戻る">戻る</button>
-        <p class="turn" style="color:${PLAYER_COLORS[G.current]}">${gemSvg(PLAYER_COLORS[G.current], 18)}P${G.current + 1} の番</p>
+        <p class="turn" style="color:${PLAYER_COLORS[G.current]}">${gemSvg(PLAYER_COLORS[G.current], 18)}P${G.current + 1}${pl.cpu ? '（CPU）' : ''} の番</p>
       </div>
       <div class="forest">${rowsHtml}</div>
       ${actions}
@@ -660,11 +661,58 @@ function render() {
   by('btn-plus')?.addEventListener('click', usePlus);
   by('btn-end')?.addEventListener('click', endTurn);
   by('btn-back')?.addEventListener('click', () => goSetup(true));
+  clearTimeout(cpuTimer);
+  if (pl.cpu) cpuTimer = setTimeout(cpuStep, CPU_SPEEDS[cpuSpeed].ms);
+}
+
+// ---- テスト用 CPU（雑: 取れる端の札から適当に選び、原石はたまに置く） ----
+const CPU_SPEEDS = {
+  slow: { label: 'ゆっくり', ms: 1200 },
+  normal: { label: 'ふつう', ms: 600 },
+  fast: { label: '速い', ms: 150 },
+  instant: { label: '一瞬', ms: 0 },
+};
+let cpuOn = false;
+let cpuSpeed = 'normal';
+try { cpuSpeed = localStorage.getItem(STORE + 'cpuSpeed') || 'normal'; } catch { /* 読めなくてもよい */ }
+if (!CPU_SPEEDS[cpuSpeed]) cpuSpeed = 'normal';
+let cpuTimer = null;
+const pickRandom = (a) => a[Math.floor(Math.random() * a.length)];
+
+function cpuStep() {
+  cpuTimer = null;
+  if (!G || G.over || !G.players[G.current].cpu) return;
+  const pl = G.players[G.current];
+  if (G.phase === 'take' || G.phase === 'take2') {
+    const ok = allEnds().filter((e) => !takeReason(e.tile));
+    if (G.phase === 'take2' && (ok.length === 0 || Math.random() < 0.4)) { G.phase = 'gem'; render(); return; }
+    if (ok.length === 0) { skipTake(); return; }
+    // 自分が多く持っている精霊を少しだけ優先する
+    const have = (t) => G.rows.flat().filter((x) => x.owner === G.current && speciesOf(x) === speciesOf(t)).length;
+    const best = Math.max(...ok.map((e) => have(e.tile)));
+    const pool = Math.random() < 0.6 ? ok.filter((e) => have(e.tile) === best) : ok;
+    takeTile(pickRandom(pool).tile);
+    return;
+  }
+  if (pl.gemsHand > 0 && !G.gemActionDone && Math.random() < 0.3) {
+    const free = G.rows.flat().filter((t) => !t.taken && t.gem == null);
+    if (free.length) {
+      const tile = pickRandom(free);
+      pl.gemsHand--;
+      tile.gem = G.current;
+      G.gemActionDone = true;
+      G.lastGemTile = tile.id;
+      render();
+      return;
+    }
+  }
+  endTurn();
 }
 
 // スタート画面に戻る。対局の途中なら確認する
 function goSetup(confirmFirst) {
   if (confirmFirst && !confirm('ゲームをやめて最初の画面に戻りますか？')) return;
+  clearTimeout(cpuTimer);
   G = null;
   render();
 }
@@ -677,11 +725,23 @@ function renderSetup() {
       <h2 class="setup__title">精霊たちの森</h2>
       <div class="setup__coins">${decoCoins.map((k) => coinHtml(k, 44)).join('')}</div>
       <p>Spirits of the Forest を遊べる最小版。1 台を回して遊びます。</p>
+      <label class="setup__opt"><input type="checkbox" id="opt-cpu" ${cpuOn ? 'checked' : ''}> P2 から先を CPU にする（テスト用）</label>
+      <div class="setup__speed" role="group" aria-label="CPU の速さ">
+        ${Object.entries(CPU_SPEEDS).map(([k, v]) => `<button class="pill ${k === cpuSpeed ? 'pill--on' : ''}" data-speed="${k}" aria-pressed="${k === cpuSpeed}">${v.label}</button>`).join('')}
+      </div>
       <p>人数を選んでください</p>
       <div class="row-actions">
         ${[2, 3, 4].map((n) => `<button class="pill pill--main" data-n="${n}">${n} 人</button>`).join('')}
       </div>
     </div>`;
+  stage.querySelector('#opt-cpu').addEventListener('change', (e) => { cpuOn = e.target.checked; });
+  stage.querySelectorAll('[data-speed]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      cpuSpeed = btn.dataset.speed;
+      try { localStorage.setItem(STORE + 'cpuSpeed', cpuSpeed); } catch { /* 保存できなくてもよい */ }
+      renderSetup();
+    });
+  });
   stage.querySelectorAll('[data-n]').forEach((btn) => {
     btn.addEventListener('click', () => { G = newGame(Number(btn.dataset.n)); render(); });
   });

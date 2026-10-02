@@ -261,11 +261,20 @@ button { font: inherit; color: inherit; }
 .hand.cur { border-color: rgba(201, 165, 90, 0.8); background: rgba(201, 165, 90, 0.08); }
 .hand__name { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 4px; }
 .hand__gems { margin-left: auto; font-size: 12px; font-weight: normal; color: var(--ink-faint); }
-.hand__cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 45px; align-items: flex-end; }
-.hand__stack { display: flex; padding: 2px; border-radius: 6px; }
+.hand__cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 45px; align-items: flex-start; }
+.hand__stack { display: flex; flex-direction: column; padding: 2px; border-radius: 6px; }
 .hand__stack.lead { box-shadow: 0 0 0 1.5px var(--gold); }
-.hand__stack .tile--mini + .tile--mini { margin-left: -18px; }
+/* 縦に重ね、下の札の上端（紋章）が見えるように 17px ずつずらす */
+.hand__stack .tile--mini + .tile--mini { margin-top: -28px; }
 .tile.tile--mini { width: 30px; box-shadow: 0 1px 2px rgba(44, 38, 32, 0.35); }
 .hand__empty { font-size: 12px; color: var(--ink-faint); align-self: center; }
 .hand__tokens { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; }
 .hand__token { display: inline-flex; align-items: center; gap: 2px; }
+
+/* ---- テスト用 CPU ---- */
+.game.cpu-turn .forest, .game.cpu-turn .row-actions, .game.cpu-turn #btn-end, .game.cpu-turn #btn-stop, .game.cpu-turn #btn-skip { pointer-events: none; }
+.setup__opt { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; font-size: 14px; }
+.setup__opt input { width: 20px; height: 20px; accent-color: var(--ink-soft); }
+.setup__speed { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.setup__speed .pill { min-height: 44px; }
+.pill--on { background: var(--ink-soft); color: var(--ivory); }
