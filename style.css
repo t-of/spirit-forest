@@ -158,11 +158,14 @@ button { font: inherit; color: inherit; }
   100% { transform: scale(1); }
 }
 .tile__token {
-  position: absolute; top: 2px; left: 2px;
-  width: 11px; height: 11px; border-radius: 50%;
-  background: var(--token-bg);
-  color: #555; font-size: 8px; line-height: 11px; text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  /* 裏向きの恩恵トークン。バッジ（上）と数字（下）の間、真ん中に置く */
+  position: absolute; top: 50%; left: 50%;
+  width: 24px; height: 24px; margin: -14px 0 0 -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #d9b46a, #8a6328);
+  border: 2px solid #f3e2b3;
+  color: #fff6dc; font-size: 13px; font-weight: bold; line-height: 20px; text-align: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .token-disc {
   display: inline-flex; align-items: center; justify-content: center;
