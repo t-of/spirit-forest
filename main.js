@@ -527,9 +527,15 @@ function computeScore() {
   return { totals, scores, perCat };
 }
 
-// 現在の形勢（タイル + トークン）で、各精霊・力の源の多数派を取っているプレイヤー
-function currentLeaders(c) {
-  const counts = G.players.map((_, p) => G.rows.reduce((n, row) => n + row.filter((t) => t.taken && t.owner === p && t.marks.includes(c)).length, 0) + (G.players[p].tokens[c] || 0));
+// 恩恵トークンは持ち主にしか見せない（裏向きで持つ）。見ている人: 観戦なら全員、CPU 戦なら P1、みんなで遊ぶなら手番の人
+function canSeeTokens(p) {
+  if (playMode === 'watch') return true;
+  if (playMode === 'cpu') return p === 0;
+  return p === G.current;
+}
+// 画面に出す数と多数派（ほかの人のトークンは数えない。見えない分で多数派がばれないように）
+function shownLeaders(c) {
+  const counts = G.players.map((_, p) => G.rows.reduce((n, row) => n + row.filter((t) => t.taken && t.owner === p && t.marks.includes(c)).length, 0) + (canSeeTokens(p) ? (G.players[p].tokens[c] || 0) : 0));
   const max = Math.max(...counts);
   const leaders = max > 0 ? counts.map((v, p) => (v === max ? p : -1)).filter((p) => p >= 0) : [];
   return { counts, leaders };
@@ -602,14 +608,14 @@ function render() {
         return `<section class="hand ${p === G.current ? 'cur' : ''}">
           <h3 class="hand__name" style="color:${PLAYER_COLORS[p]}">${gemSvg(PLAYER_COLORS[p], 14)}P${p + 1}<span class="hand__gems">原石 ${pl2.gemsHand}</span></h3>
           <div class="hand__counts">${CATEGORIES.map((c) => {
-            const { counts, leaders } = currentLeaders(c);
+            const { counts, leaders } = shownLeaders(c);
             const cls = counts[p] === 0 ? ' zero' : leaders.includes(p) ? ' lead' : '';
             return `<span class="hand__count${cls}" title="${INFO[c].name}">${coinHtml(c, 16)}<b>${counts[p]}</b></span>`;
           }).join('')}</div>
           <div class="hand__cards">
             ${groups.map((g) => {
               const sp = speciesOf(g[0]);
-              const lead = currentLeaders(sp).leaders.includes(p) ? ' lead' : '';
+              const lead = shownLeaders(sp).leaders.includes(p) ? ' lead' : '';
               return `<span class="hand__stack${lead}">${g.map((t) => {
                 const { base, dark, light } = INFO[sp];
                 return `<span class="tile tile--mini" style="background:${base};--t-dark:${dark};--t-light:${light}">
@@ -617,7 +623,9 @@ function render() {
               }).join('')}</span>`;
             }).join('') || '<span class="hand__empty">まだ札がありません</span>'}
           </div>
-          ${tokens.length ? `<div class="hand__tokens">${tokens.map(([k, n]) => `<span class="hand__token">${coinHtml(k, 22)}${n > 1 ? `×${n}` : ''}</span>`).join('')}</div>` : ''}
+          ${!tokens.length ? '' : canSeeTokens(p)
+            ? `<div class="hand__tokens">${tokens.map(([k, n]) => `<span class="hand__token">${coinHtml(k, 22)}${n > 1 ? `×${n}` : ''}</span>`).join('')}</div>`
+            : `<div class="hand__tokens"><span class="hand__token hand__token--back">${tokenBackHtml()}×${tokens.reduce((n, [, v]) => n + v, 0)}</span></div>`}
         </section>`;
       }).join('')}
     </div>`;
@@ -652,7 +660,7 @@ function render() {
       </div>
       <div class="forest">${rowsHtml}</div>
       ${actions}
-      <p class="msg">${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message || ''}</p>
+      <p class="msg">${G.lastToken && !canSeeTokens(G.current) ? '恩恵トークンを 1 枚獲得' : `${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message || ''}`}</p>
       ${G.players.some((x) => x.cpu) ? speedPillsHtml() : ''}
       </div>
       <aside class="game__side" aria-label="持っている札">${header}</aside>
