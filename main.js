@@ -137,11 +137,11 @@ let G = null; // ゲーム状態（1 対局分）
 function newGame(numPlayers) {
   let id = 0;
   const rows = TILE_TEXT.map((row) => row.map((marks) => ({ id: id++, marks, taken: false, gem: null, token: null })));
-  const allTiles = rows.flat();
 
-  // 恩恵トークン 14 枚（精霊 9・力の源 3・「＋」2）から 8 枚を、ランダムなタイルへ裏向きで乗せる
+  // 恩恵トークン 14 枚（精霊 9・力の源 3・「＋」2）から 8 枚を裏向きで、決まったマスへ V の字に乗せる
+  // 各段の左から 2・11、3・10、4・9、5・8 枚目（0 始まりの添字）
   const tokens = shuffle([...CATEGORIES, 'plus', 'plus']).slice(0, 8);
-  const spots = shuffle(allTiles).slice(0, 8);
+  const spots = [[1, 10], [2, 9], [3, 8], [4, 7]].flatMap((cols, r) => cols.map((c) => rows[r][c]));
   spots.forEach((tile, i) => { tile.token = tokens[i]; });
 
   const gemsEach = numPlayers <= 2 ? 3 : 2;
