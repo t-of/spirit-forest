@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+  <defs>
+    <!-- 角ばった葉を重ねた地紋。色は var(--t-base)/(--t-dark)/(--t-light) で9種に使い回す。
+         60x90 を縦長タイル全面に敷く（preserveAspectRatio="none" で引き伸ばす想定）。 -->
+    <symbol id="leaf-pattern" viewBox="0 0 60 90">
+      <rect width="60" height="90" fill="var(--t-base)"/>
+      <!-- 大きな葉の面（濃） -->
+      <polygon points="30,2 48,16 44,38 30,46 16,38 12,16" fill="var(--t-dark)" opacity="0.9"/>
+      <polygon points="30,2 48,16 44,38 30,30" fill="var(--t-light)" opacity="0.35"/>
+      <!-- 下の葉(濃・淡の面割り) -->
+      <polygon points="4,52 26,46 34,62 24,88 2,84" fill="var(--t-dark)" opacity="0.85"/>
+      <polygon points="26,46 34,62 24,88 14,70" fill="var(--t-light)" opacity="0.3"/>
+      <!-- 右の葉 -->
+      <polygon points="58,46 60,90 36,90 38,66 50,54" fill="var(--t-light)" opacity="0.32"/>
+      <polygon points="58,46 60,74 48,70 50,54" fill="var(--t-dark)" opacity="0.4"/>
+      <!-- 小さな差し葉（星屑のような細片） -->
+      <polygon points="8,20 16,24 10,32 2,28" fill="var(--t-light)" opacity="0.25"/>
+      <polygon points="46,6 54,12 50,22 42,16" fill="var(--t-dark)" opacity="0.3"/>
+      <!-- 葉脈ふうの細線 -->
+      <path d="M30 2V46M4 52L24 88M58 46L36 90" fill="none" stroke="var(--t-light)" stroke-width="0.6" opacity="0.4"/>
+    </symbol>
+
+    <!-- 花だけに重ねる、濃い色の細いつる -->
+    <symbol id="leaf-vine" viewBox="0 0 60 90">
+      <path d="M6 88C4 70 14 60 10 44C6 28 18 20 14 4M30 90C32 74 24 64 30 50C36 36 26 26 32 10M54 88C56 70 46 60 50 44C54 28 42 20 46 2"
+        fill="none" stroke="var(--t-dark)" stroke-width="1.1" stroke-linecap="round" opacity="0.55"/>
+    </symbol>
+  </defs>
+</svg>
