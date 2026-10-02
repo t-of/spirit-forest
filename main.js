@@ -337,6 +337,7 @@ function newGame(numPlayers) {
   state.message = '';
   state.gemActionDone = false;
   state.cpuPlan = null; // CPU が考えた 1 手番ぶんの計画（段階的に画面へ出す）
+  state.cpuThinking = false; // Worker に思考を頼んでいる間（二重に頼まない）
   return state;
 }
 
@@ -641,14 +642,47 @@ function bindSpeedPills(redraw) {
 }
 function tileById(id) { return G.rows.flat().find((t) => t.id === id); }
 
-// CPU は 1 手番ぶん（取る 1〜2 枚＋原石の操作）を評価関数つきでまとめて考え（ai.js の chooseMove）、
-// それを手番の最後まで、人が押すのと同じ関数（takeTile・skipTake・usePlus・Rules.placeGem/moveGem・endTurn）で
-// 1 段ずつ画面に出す。
+// CPU の思考（ISMCTS、ai.js の ismctsMove）は重いので Worker で別スレッドに投げる。考え中も画面は固まらない。
+// Worker が使えない環境は従来の評価関数つき 1 手読み（AI.chooseMove）に戻す。
+let cpuWorker = null;
+let cpuReqId = 0;
+function requestCpuMove(s, viewerIdx, done) {
+  try {
+    if (!cpuWorker && typeof Worker !== 'undefined') cpuWorker = new Worker('./worker.js', { type: 'module' });
+  } catch { cpuWorker = null; }
+  if (!cpuWorker) { done(AI.chooseMove(s, viewerIdx)); return; }
+  const id = ++cpuReqId;
+  const w = cpuWorker;
+  const finish = (move) => {
+    w.removeEventListener('message', onMsg);
+    w.removeEventListener('error', onErr);
+    done(move || AI.chooseMove(s, viewerIdx));
+  };
+  const onMsg = (e) => { if (e.data.id === id) finish(e.data.move); };
+  const onErr = () => { if (cpuWorker === w) cpuWorker = null; finish(null); };
+  w.addEventListener('message', onMsg);
+  w.addEventListener('error', onErr);
+  w.postMessage({ id, state: s, viewerIdx, opts: { timeLimitMs: 1500 } });
+}
+
+// CPU は 1 手番ぶん（取る 1〜2 枚＋原石の操作）をまとめて考え、それを手番の最後まで、人が押すのと同じ関数
+// （takeTile・skipTake・usePlus・Rules.placeGem/moveGem・endTurn）で 1 段ずつ画面に出す。
 function cpuStep() {
   cpuTimer = null;
   if (!G || G.over || !G.players[G.current].cpu) return;
   if (G.phase === 'take' || G.phase === 'take2') {
-    if (!G.cpuPlan) G.cpuPlan = { move: AI.chooseMove(G, G.current), takeIndex: 0 };
+    if (!G.cpuPlan) {
+      if (G.cpuThinking) return;
+      G.cpuThinking = true;
+      const g = G;
+      requestCpuMove(g, g.current, (move) => {
+        if (G !== g) return; // 考えている間にゲームが変わった
+        g.cpuThinking = false;
+        g.cpuPlan = { move, takeIndex: 0 };
+        cpuStep();
+      });
+      return;
+    }
     const plan = G.cpuPlan;
     if (!plan.move) { skipTake(); return; } // 取れる端の札が無い
     if (plan.takeIndex < plan.move.takes.length) {
