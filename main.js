@@ -569,7 +569,9 @@ function render() {
 
   const rowsHtml = G.rows.map((row) => `
     <div class="forest-row">
-      ${row.filter((t) => !t.taken).map((t) => {
+      ${row.map((t) => {
+        // 取られた札は空きマスとして残し、ほかの札が詰めて動かないようにする
+        if (t.taken) return '<span class="tile tile--gone" aria-hidden="true"></span>';
         const clickable = canTake && endIds.has(t.id);
         const selectable = G.pendingAction === 'move-select' && t.gem === G.current;
         const placeable = G.pendingAction === 'place' && t.gem == null;

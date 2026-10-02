@@ -121,6 +121,8 @@ button { font: inherit; color: inherit; }
   min-height: 1px; /* 全部取られた行がつぶれても高さが残らない */
 }
 .forest-row::-webkit-scrollbar { height: 4px; }
+.tile.tile--gone { background: none; box-shadow: none; outline: 1px dashed rgba(92, 80, 69, 0.25); outline-offset: -1px; }
+.tile.tile--gone::after { display: none; }
 
 /* 札: 2:3 の縦長。container query 単位（cqw/cqh）で、紋章・数字を割合どおりに置く */
 .tile {
