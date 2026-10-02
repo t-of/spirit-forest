@@ -111,13 +111,13 @@ button { font: inherit; color: inherit; }
 .msg { margin: 2px 0; min-height: 2.6em; font-size: 13px; color: var(--ink-soft); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
 /* ---- 森（タイル） ---- */
-.forest { display: flex; flex-direction: column; gap: 6px; }
+.forest { display: flex; flex-direction: column; gap: 0; }
 .forest-row {
   display: flex;
   gap: 5px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
-  padding-bottom: 2px;
+  padding: 4px 4px 6px; /* 光る縁・影・沈んだ札が列の端で切れないように */
   min-height: 1px; /* 全部取られた行がつぶれても高さが残らない */
 }
 .forest-row::-webkit-scrollbar { height: 4px; }
@@ -253,7 +253,7 @@ button { font: inherit; color: inherit; }
 
 /* 森の札は列の幅いっぱい（12 枚）に広げる。画面の高さに 4 段が収まる大きさまで。狭い画面では 54px で横に流す */
 .forest { container-type: inline-size; }
-.forest .tile { width: max(54px, min(calc((100cqw - 55px) / 12), calc((100dvh - 360px) / 6))); }
+.forest .tile { width: max(54px, min(calc((100cqw - 64px) / 12), calc((100dvh - 360px) / 6))); }
 
 /* ---- 手元（マークごとの数と恩恵トークン） ---- */
 .hands { display: flex; flex-direction: column; gap: 8px; }
