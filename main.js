@@ -601,6 +601,11 @@ function render() {
         const tokens = Object.entries(pl2.tokens).filter(([, n]) => n > 0);
         return `<section class="hand ${p === G.current ? 'cur' : ''}">
           <h3 class="hand__name" style="color:${PLAYER_COLORS[p]}">${gemSvg(PLAYER_COLORS[p], 14)}P${p + 1}<span class="hand__gems">原石 ${pl2.gemsHand}</span></h3>
+          <div class="hand__counts">${CATEGORIES.map((c) => {
+            const { counts, leaders } = currentLeaders(c);
+            const cls = counts[p] === 0 ? ' zero' : leaders.includes(p) ? ' lead' : '';
+            return `<span class="hand__count${cls}" title="${INFO[c].name}">${coinHtml(c, 16)}<b>${counts[p]}</b></span>`;
+          }).join('')}</div>
           <div class="hand__cards">
             ${groups.map((g) => {
               const sp = speciesOf(g[0]);
