@@ -617,23 +617,26 @@ function render() {
       }).join('')}
     </div>`;
 
-  let actions = '';
-  if (canTake) {
-    const hasAny = ends.some((e) => !takeReason(e.tile));
-    actions = hasAny
-      ? `<p class="hint">${G.phase === 'take2' ? '続けて同じ精霊の 1 体タイルを取る、または「ここまで」' : '端のタイルを 1 枚タップ'}</p>
-         ${G.phase === 'take2' ? '<button class="pill" id="btn-stop">ここまで</button>' : ''}`
-      : `<p class="hint">取れるタイルがありません</p><button class="pill" id="btn-skip">スキップ</button>`;
-  } else {
-    actions = `
-      <p class="hint">原石を置く・動かす（任意）、終わったら手番終了</p>
+  // ボタンはいつも同じ並びで出し、使えないときは押せなくするだけ（出たり消えたりして画面が動かないように）
+  const hasAny = canTake && ends.some((e) => !takeReason(e.tile));
+  const gemPhase = G.phase === 'gem';
+  const hint = G.pendingAction === 'place' ? '原石を置く札をタップ'
+    : G.pendingAction === 'move-select' ? '動かす自分の原石をタップ'
+    : G.pendingAction === 'move-dest' ? '動かし先の札をタップ'
+    : gemPhase ? '原石を置く・動かす（任意）、終わったら手番終了'
+    : !hasAny ? '取れる札がありません。「取らずに進む」'
+    : G.phase === 'take2' ? '続けて同じ精霊の 1 体の札を取る、または「取らずに進む」'
+    : '端の札を 1 枚タップ';
+  const dis = (ok) => (ok ? '' : 'disabled');
+  const actions = `
+      <p class="hint">${hint}</p>
       <div class="row-actions">
-        <button class="pill" id="btn-place" ${pl.gemsHand > 0 && !G.gemActionDone ? '' : 'disabled'}>${G.pendingAction === 'place' ? '置く場所をタップ' : '原石を置く'}</button>
-        <button class="pill" id="btn-move" ${pl.gemsHand === 0 && hasBoardGem(G.current) && !G.gemActionDone ? '' : 'disabled'}>${G.pendingAction && G.pendingAction !== 'place' ? '原石を選択中…' : '原石を動かす'}</button>
-        <button class="pill" id="btn-plus" ${pl.tokens.plus && pl.gemsExcluded > 0 ? '' : 'disabled'}>＋を使う</button>
-      </div>
-      <button class="pill pill--main" id="btn-end">手番終了</button>`;
-  }
+        <button class="pill" id="btn-stop" ${dis(G.phase === 'take2' || (canTake && !hasAny))}>取らずに進む</button>
+        <button class="pill ${G.pendingAction === 'place' ? 'pill--on' : ''}" id="btn-place" ${dis(gemPhase && pl.gemsHand > 0 && !G.gemActionDone)}>原石を置く</button>
+        <button class="pill ${G.pendingAction && G.pendingAction !== 'place' ? 'pill--on' : ''}" id="btn-move" ${dis(gemPhase && pl.gemsHand === 0 && hasBoardGem(G.current) && !G.gemActionDone)}>原石を動かす</button>
+        <button class="pill" id="btn-plus" ${dis(gemPhase && pl.tokens.plus && pl.gemsExcluded > 0)}>＋を使う</button>
+        <button class="pill pill--main" id="btn-end" ${dis(gemPhase)}>手番終了</button>
+      </div>`;
 
   stage.innerHTML = `
     <div class="game ${pl.cpu ? 'cpu-turn' : ''}">
@@ -644,7 +647,7 @@ function render() {
       </div>
       <div class="forest">${rowsHtml}</div>
       ${actions}
-      ${G.message ? `<p class="msg">${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message}</p>` : ''}
+      <p class="msg">${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message || ''}</p>
       ${G.players.some((x) => x.cpu) ? speedPillsHtml() : ''}
       </div>
       <aside class="game__side" aria-label="持っている札">${header}</aside>
@@ -657,8 +660,7 @@ function render() {
     });
   });
   const by = (id) => stage.querySelector('#' + id);
-  by('btn-stop')?.addEventListener('click', () => { G.phase = 'gem'; render(); });
-  by('btn-skip')?.addEventListener('click', skipTake);
+  by('btn-stop')?.addEventListener('click', skipTake);
   by('btn-place')?.addEventListener('click', startPlace);
   by('btn-move')?.addEventListener('click', startMove);
   by('btn-plus')?.addEventListener('click', usePlus);
