@@ -62,10 +62,10 @@ const POWER_ICON_COLOR = IV;
 const PLAYER_COLORS = ['#7E3B3F', '#3E5F7A', '#8A6630', '#5E654B'];
 
 // ---- デザインの切り替え: 森（版画ふう）/ 幾何（はっきりした色と正多角形のマーク） ----
-// 幾何のマーク: 正 3〜8 角形を 2 向きずつ（0 = 頂点が上、1 = π/n 回す）で 12 種
+// 幾何のマーク: 精霊は正 3〜7 角形を向き違い（0 = 頂点が上、1 = π/n 回す）で 9 種。火・月・太陽は色違いの円
 const GEO_MARK = {
   sp: [3, 0], br: [3, 1], lv: [4, 0], vi: [4, 1], dw: [5, 0], mu: [5, 1],
-  fr: [6, 0], fl: [6, 1], ms: [7, 0], fi: [7, 1], mo: [8, 0], su: [8, 1],
+  fr: [6, 0], fl: [6, 1], ms: [7, 0],
 };
 const GEO_INK = '#16182B';
 // 力の源（火・月・太陽）の色。精霊と見分けるため、こちらだけ墨の縁どりを付ける
@@ -237,7 +237,7 @@ function embPathsHtml(key) {
   if (theme === 'geo') {
     return SPECIES.includes(key)
       ? `<polygon points="${geoPoly(key)}" fill="${INFO[key].base}"/>`
-      : `<polygon points="${geoPoly(key)}" fill="${GEO_POWER[key]}" stroke="${GEO_INK}" stroke-width="1.4" stroke-linejoin="round"/>`;
+      : `<circle cx="12" cy="12" r="8.5" fill="${GEO_POWER[key]}" stroke="${GEO_INK}" stroke-width="1.4"/>`;
   }
   const color = SPECIES.includes(key) ? INFO[key].dark : null; // 火・月・太陽は slab() が自分で色を持つので使わない
   return slotsOf(key, color).map((p) => `<path d="${p.d}" fill="${p.f}" stroke="${p.s}"/>`).join('');
