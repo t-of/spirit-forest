@@ -68,6 +68,8 @@ const GEO_MARK = {
   fr: [6, 0], fl: [6, 1], ms: [7, 0], fi: [7, 1], mo: [8, 0], su: [8, 1],
 };
 const GEO_INK = '#16182B';
+// 力の源（火・月・太陽）の色。精霊と見分けるため、こちらだけ墨の縁どりを付ける
+const GEO_POWER = { fi: '#E8202A', mo: '#3FA9F5', su: '#FFD000' };
 const THEMES = {
   forest: {
     paper: '#E9E0CA',
@@ -232,7 +234,11 @@ function slotsOf(key, color) {
   return [0, 1, 2, 3].map((i) => s[i] || EMPTY_SLOT);
 }
 function embPathsHtml(key) {
-  if (theme === 'geo') return `<polygon points="${geoPoly(key)}" fill="${SPECIES.includes(key) ? INFO[key].base : GEO_INK}"/>`;
+  if (theme === 'geo') {
+    return SPECIES.includes(key)
+      ? `<polygon points="${geoPoly(key)}" fill="${INFO[key].base}"/>`
+      : `<polygon points="${geoPoly(key)}" fill="${GEO_POWER[key]}" stroke="${GEO_INK}" stroke-width="1.4" stroke-linejoin="round"/>`;
+  }
   const color = SPECIES.includes(key) ? INFO[key].dark : null; // 火・月・太陽は slab() が自分で色を持つので使わない
   return slotsOf(key, color).map((p) => `<path d="${p.d}" fill="${p.f}" stroke="${p.s}"/>`).join('');
 }
