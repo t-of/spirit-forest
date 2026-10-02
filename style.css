@@ -312,3 +312,16 @@ button { font: inherit; color: inherit; }
 }
 /* ほかの人の恩恵トークンは裏向き 1 枚 ＋ 枚数だけ */
 .hand__token--back .tile__token { position: static; margin: 0; width: 22px; height: 22px; }
+/* 自分の恩恵トークン（みんなで遊ぶとき）: 長押ししている間だけ、上に表を出す */
+.hand__peek {
+  position: relative; font: inherit; font-size: 12px; color: inherit; cursor: pointer;
+  min-height: 44px; padding: 4px 8px; border: 1px dashed rgba(92, 80, 69, 0.45); border-radius: 8px; background: transparent;
+  touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.hand__peek-hint { margin-left: 4px; font-size: 11px; color: var(--ink-faint); }
+.hand__peek-faces {
+  display: none; position: absolute; left: 0; bottom: calc(100% + 4px); z-index: 20;
+  gap: 6px; padding: 6px 8px; white-space: nowrap;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 12px rgba(44, 38, 32, 0.3);
+}
+.hand__peek.peeking .hand__peek-faces { display: flex; }

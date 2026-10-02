@@ -527,12 +527,14 @@ function computeScore() {
   return { totals, scores, perCat };
 }
 
-// 恩恵トークンは持ち主にしか見せない（裏向きで持つ）。見ている人: 観戦なら全員、CPU 戦なら P1、みんなで遊ぶなら手番の人
+// 恩恵トークンは持ち主にしか見せない（裏向きで持つ）。観戦なら全員、CPU 戦なら P1 に見せる。
+// みんなで遊ぶときは画面をみんなで見ているので、誰のも出さない（手番の人が自分の分を長押ししたときだけ見える）
 function canSeeTokens(p) {
   if (playMode === 'watch') return true;
   if (playMode === 'cpu') return p === 0;
-  return p === G.current;
+  return false;
 }
+function canPeekTokens(p) { return playMode === 'human' && p === G.current; }
 // 画面に出す数と多数派（ほかの人のトークンは数えない。見えない分で多数派がばれないように）
 function shownLeaders(c) {
   const counts = G.players.map((_, p) => G.rows.reduce((n, row) => n + row.filter((t) => t.taken && t.owner === p && t.marks.includes(c)).length, 0) + (canSeeTokens(p) ? (G.players[p].tokens[c] || 0) : 0));
@@ -625,7 +627,10 @@ function render() {
           </div>
           ${!tokens.length ? '' : canSeeTokens(p)
             ? `<div class="hand__tokens">${tokens.map(([k, n]) => `<span class="hand__token">${coinHtml(k, 22)}${n > 1 ? `×${n}` : ''}</span>`).join('')}</div>`
-            : `<div class="hand__tokens"><span class="hand__token hand__token--back">${tokenBackHtml()}×${tokens.reduce((n, [, v]) => n + v, 0)}</span></div>`}
+            : canPeekTokens(p)
+              ? `<div class="hand__tokens"><button class="hand__token hand__token--back hand__peek" type="button" aria-label="長押しで自分の恩恵トークンを見る">${tokenBackHtml()}×${tokens.reduce((n, [, v]) => n + v, 0)}<span class="hand__peek-hint">長押しで見る</span>
+                  <span class="hand__peek-faces">${tokens.map(([k, n]) => `<span class="hand__token">${coinHtml(k, 26)}${n > 1 ? `×${n}` : ''}</span>`).join('')}</span></button></div>`
+              : `<div class="hand__tokens"><span class="hand__token hand__token--back">${tokenBackHtml()}×${tokens.reduce((n, [, v]) => n + v, 0)}</span></div>`}
         </section>`;
       }).join('')}
     </div>`;
@@ -680,6 +685,16 @@ function render() {
   by('btn-end')?.addEventListener('click', endTurn);
   by('btn-back')?.addEventListener('click', () => goSetup(true));
   bindSpeedPills(render);
+  // 押している間だけ表を見せる
+  stage.querySelectorAll('.hand__peek').forEach((el) => {
+    const on = (e) => { e.preventDefault(); el.classList.add('peeking'); };
+    const off = () => el.classList.remove('peeking');
+    el.addEventListener('pointerdown', on);
+    ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach((ev) => el.addEventListener(ev, off));
+    el.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') on(e); });
+    el.addEventListener('keyup', off);
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+  });
   clearTimeout(cpuTimer);
   if (pl.cpu) cpuTimer = setTimeout(cpuStep, CPU_SPEEDS[cpuSpeed].ms);
 }
