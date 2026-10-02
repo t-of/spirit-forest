@@ -1,6 +1,7 @@
 'use strict';
 
 import * as Rules from './rules.js';
+import * as AI from './ai.js';
 
 // localStorage はほかのアプリと共有される（同じ t-of.github.io のため）。
 // キーは必ず 'spirit-forest.' で始める。今回は保存データなし（1 回の対局を遊ぶだけ）。
@@ -335,6 +336,7 @@ function newGame(numPlayers) {
   state.lastToken = null; // 直前に取った恩恵トークン（演出用）
   state.message = '';
   state.gemActionDone = false;
+  state.cpuPlan = null; // CPU が考えた 1 手番ぶんの計画（段階的に画面へ出す）
   return state;
 }
 
@@ -446,6 +448,7 @@ function endTurn() {
   G.message = '';
   G.lastToken = null;
   G.gemActionDone = false;
+  G.cpuPlan = null;
   render();
 }
 
@@ -636,31 +639,37 @@ function bindSpeedPills(redraw) {
     });
   });
 }
-const pickRandom = (a) => a[Math.floor(Math.random() * a.length)];
+function tileById(id) { return G.rows.flat().find((t) => t.id === id); }
 
+// CPU は 1 手番ぶん（取る 1〜2 枚＋原石の操作）を評価関数つきでまとめて考え（ai.js の chooseMove）、
+// それを手番の最後まで、人が押すのと同じ関数（takeTile・skipTake・usePlus・Rules.placeGem/moveGem・endTurn）で
+// 1 段ずつ画面に出す。
 function cpuStep() {
   cpuTimer = null;
   if (!G || G.over || !G.players[G.current].cpu) return;
-  const pl = G.players[G.current];
   if (G.phase === 'take' || G.phase === 'take2') {
-    const ok = allEnds().filter((e) => !takeReason(e.tile));
-    if (G.phase === 'take2' && (ok.length === 0 || Math.random() < 0.4)) { G.phase = 'gem'; render(); return; }
-    if (ok.length === 0) { skipTake(); return; }
-    // 自分が多く持っている精霊を少しだけ優先する
-    const have = (t) => G.rows.flat().filter((x) => x.owner === G.current && speciesOf(x) === speciesOf(t)).length;
-    const best = Math.max(...ok.map((e) => have(e.tile)));
-    const pool = Math.random() < 0.6 ? ok.filter((e) => have(e.tile) === best) : ok;
-    takeTile(pickRandom(pool).tile);
-    return;
+    if (!G.cpuPlan) G.cpuPlan = { move: AI.chooseMove(G, G.current), takeIndex: 0 };
+    const plan = G.cpuPlan;
+    if (!plan.move) { skipTake(); return; } // 取れる端の札が無い
+    if (plan.takeIndex < plan.move.takes.length) {
+      const tile = tileById(plan.move.takes[plan.takeIndex]);
+      plan.takeIndex++;
+      takeTile(tile);
+      return;
+    }
+    if (G.phase === 'take' || G.phase === 'take2') { skipTake(); return; } // 取る手が無い、または2枚目は取らずに止める計画だった
+    return; // すでに 'gem' フェーズ（次の cpuStep で原石の操作へ）
   }
-  if (pl.gemsHand > 0 && !G.gemActionDone && Math.random() < 0.3) {
-    const free = G.rows.flat().filter((t) => !t.taken && t.gem == null);
-    if (free.length) {
-      const tile = pickRandom(free);
-      pl.gemsHand--;
-      tile.gem = G.current;
+  const pl = G.players[G.current];
+  if (pl.tokens.plus > 0 && pl.gemsExcluded > 0) { usePlus(); return; } // 使わない理由がないので先に使い切る
+  const plan = G.cpuPlan;
+  const ga = plan && plan.move && plan.move.gemAction;
+  if (ga && !G.gemActionDone) {
+    const r = ga.type === 'place' ? Rules.placeGem(G, tileById(ga.tileId)) : Rules.moveGem(G, tileById(ga.from), tileById(ga.to));
+    if (r.ok) {
       G.gemActionDone = true;
-      G.lastGemTile = tile.id;
+      G.lastGemTile = ga.type === 'place' ? ga.tileId : ga.to;
+      beep(520);
       render();
       return;
     }
