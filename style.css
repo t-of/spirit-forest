@@ -255,19 +255,12 @@ button { font: inherit; color: inherit; }
 .forest { container-type: inline-size; }
 .forest .tile { width: max(54px, min(calc((100cqw - 55px) / 12), calc((100dvh - 360px) / 6))); }
 
-/* ---- 手札（持っている札を精霊ごとに重ねて並べる） ---- */
+/* ---- 手元（マークごとの数と恩恵トークン） ---- */
 .hands { display: flex; flex-direction: column; gap: 8px; }
 .hand { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(92, 80, 69, 0.2); }
 .hand.cur { border-color: rgba(201, 165, 90, 0.8); background: rgba(201, 165, 90, 0.08); }
 .hand__name { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 4px; }
 .hand__gems { margin-left: auto; font-size: 12px; font-weight: normal; color: var(--ink-faint); }
-.hand__cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 69px; align-items: flex-start; }
-.hand__stack { display: flex; flex-direction: column; padding: 2px; border-radius: 6px; }
-.hand__stack.lead { box-shadow: 0 0 0 1.5px var(--gold); }
-/* 縦に重ね、下の札の上端（紋章）が見えるようにずらす */
-.hand__stack .tile--mini + .tile--mini { margin-top: -42px; }
-.tile.tile--mini { width: 46px; box-shadow: 0 1px 2px rgba(44, 38, 32, 0.35); }
-.hand__empty { font-size: 12px; color: var(--ink-faint); align-self: center; }
 .hand__tokens { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; }
 .hand__token { display: inline-flex; align-items: center; gap: 2px; }
 
@@ -294,15 +287,13 @@ button { font: inherit; color: inherit; }
 @media (max-width: 699px) {
   .game { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .hands { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-  .tile.tile--mini { width: 38px; }
-  .hand__stack .tile--mini + .tile--mini { margin-top: -35px; }
 }
 
 /* 名前の下に、マークごとの数（札＋恩恵トークン）。12 種を 1 列に、いつも同じ並びで出す */
 .hand__counts { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; margin: 0 0 6px; }
 .hand__count { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
-/* 紋章の下に数字を置き、紋章は列の幅いっぱい（最大 30px） */
-.hand__count .coin { width: 100% !important; height: auto !important; max-width: 30px; aspect-ratio: 1; min-width: 0; }
+/* 紋章の下に数字を置き、紋章は列の幅いっぱい（最大 36px） */
+.hand__count .coin { width: 100% !important; height: auto !important; max-width: 36px; aspect-ratio: 1; min-width: 0; }
 .hand__count.zero { opacity: 0.4; }
 .hand__count.lead b { color: var(--ink); box-shadow: inset 0 -2px 0 var(--gold); }
 /* ほかの人の恩恵トークンは裏向き 1 枚 ＋ 枚数だけ */

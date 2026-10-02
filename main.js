@@ -537,7 +537,7 @@ function canSeeTokens(p) {
 function canPeekTokens(p) { return playMode === 'human' && p === G.current; }
 // 画面に出す数と多数派（ほかの人のトークンは数えない。見えない分で多数派がばれないように）
 function shownLeaders(c) {
-  const counts = G.players.map((_, p) => G.rows.reduce((n, row) => n + row.filter((t) => t.taken && t.owner === p && t.marks.includes(c)).length, 0) + (canSeeTokens(p) ? (G.players[p].tokens[c] || 0) : 0));
+  const counts = G.players.map((_, p) => G.rows.reduce((n, row) => n + row.reduce((k, t) => k + (t.taken && t.owner === p ? t.marks.filter((m) => m === c).length : 0), 0), 0) + (canSeeTokens(p) ? (G.players[p].tokens[c] || 0) : 0));
   const max = Math.max(...counts);
   const leaders = max > 0 ? counts.map((v, p) => (v === max ? p : -1)).filter((p) => p >= 0) : [];
   return { counts, leaders };
@@ -600,12 +600,10 @@ function render() {
     </div>`).join('');
   G.lastGemTile = null; // 演出は 1 回の描画だけでよい
 
-  // 持っている札を、精霊ごとに重ねて並べる。多数派の山は金の縁
+  // 各プレイヤーの、マークごとの数（札に描かれたマーク＋恩恵トークン）。多数派は金の下線
   const header = `
     <div class="hands">
       ${G.players.map((pl2, p) => {
-        const mine = G.rows.flat().filter((t) => t.taken && t.owner === p);
-        const groups = SPECIES.map((sp) => mine.filter((t) => speciesOf(t) === sp)).filter((g) => g.length);
         const tokens = Object.entries(pl2.tokens).filter(([, n]) => n > 0);
         return `<section class="hand ${p === G.current ? 'cur' : ''}">
           <h3 class="hand__name" style="color:${PLAYER_COLORS[p]}">${gemSvg(PLAYER_COLORS[p], 14)}P${p + 1}<span class="hand__gems">原石 ${pl2.gemsHand}</span></h3>
@@ -614,17 +612,6 @@ function render() {
             const cls = counts[p] === 0 ? ' zero' : leaders.includes(p) ? ' lead' : '';
             return `<span class="hand__count${cls}" title="${INFO[c].name}">${coinHtml(c, 16)}<b>${counts[p]}</b></span>`;
           }).join('')}</div>
-          <div class="hand__cards">
-            ${groups.map((g) => {
-              const sp = speciesOf(g[0]);
-              const lead = shownLeaders(sp).leaders.includes(p) ? ' lead' : '';
-              return `<span class="hand__stack${lead}">${g.map((t) => {
-                const { base, dark, light } = INFO[sp];
-                return `<span class="tile tile--mini" style="background:${base};--t-dark:${dark};--t-light:${light}">
-                  <span class="tile__bg">${tilePatternSvg()}</span>${tileBadgesHtml(t)}<span class="tile__num">${SPECIES_TOTAL[sp]}</span></span>`;
-              }).join('')}</span>`;
-            }).join('') || '<span class="hand__empty">まだ札がありません</span>'}
-          </div>
           ${!tokens.length ? '' : canSeeTokens(p)
             ? `<div class="hand__tokens">${tokens.map(([k, n]) => `<span class="hand__token">${coinHtml(k, 22)}${n > 1 ? `×${n}` : ''}</span>`).join('')}</div>`
             : canPeekTokens(p)
