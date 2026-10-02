@@ -637,6 +637,7 @@ function render() {
 
   stage.innerHTML = `
     <div class="game ${pl.cpu ? 'cpu-turn' : ''}">
+      <div class="game__main">
       <div class="turn-row">
         <button class="pill back-btn" id="btn-back" aria-label="最初の画面に戻る">戻る</button>
         <p class="turn" style="color:${PLAYER_COLORS[G.current]}">${gemSvg(PLAYER_COLORS[G.current], 18)}P${G.current + 1}${pl.cpu ? '（CPU）' : ''} の番</p>
@@ -645,7 +646,8 @@ function render() {
       ${actions}
       ${G.message ? `<p class="msg">${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message}</p>` : ''}
       ${G.players.some((x) => x.cpu) ? speedPillsHtml() : ''}
-      ${header}
+      </div>
+      <aside class="game__side" aria-label="持っている札">${header}</aside>
     </div>`;
 
   stage.querySelectorAll('.tile[data-id]').forEach((btn) => {
