@@ -39,23 +39,24 @@ function reducedMotion() {
 const SPECIES = ['sp', 'br', 'lv', 'vi', 'dw', 'mu', 'fr', 'fl', 'ms'];
 const POWERS = ['fi', 'mo', 'su'];
 // 色は 1 か所（ここ）だけで決め、起動時に CSS 変数へ流し込む（style.css は var(--xx-dark) 等を参照するだけ）。
-// くすみ・ヴィンテージの 9 系統（青緑・茶・紫・灰褐・深青・朱・琥珀・ローズ・苔）に合わせた配色
+// Claude Design の見本帳（.audit/spirit-forest-design.dc.html）どおりの 9 系統
 const INFO = {
-  sp: { name: '風', base: '#3E6B6E', dark: '#294A4C', light: '#6B9A9B', count: 10 },
-  br: { name: '根', base: '#9C6B3A', dark: '#6B4725', light: '#BE9360', count: 8 },
-  lv: { name: '葉', base: '#7C6A8C', dark: '#534860', light: '#A796B3', count: 8 },
-  vi: { name: '岩', base: '#8A8070', dark: '#5C5346', light: '#B0A795', count: 8 },
-  dw: { name: '水', base: '#35526E', dark: '#223447', light: '#5E7D99', count: 7 },
-  mu: { name: '茸', base: '#AE5A42', dark: '#78392A', light: '#C8866F', count: 7 },
-  fr: { name: '木の実', base: '#B8822E', dark: '#7D571C', light: '#D1A85C', count: 6 },
-  fl: { name: '花', base: '#B06C83', dark: '#7A455A', light: '#CC98AB', count: 6 },
-  ms: { name: '苔', base: '#5C7246', dark: '#3C4C2E', light: '#8CA06F', count: 5 },
+  sp: { name: '風', base: '#6E6488', dark: '#4A4260', light: '#9C93B2', count: 10 },
+  br: { name: '根', base: '#94697F', dark: '#664457', light: '#BF9AAB', count: 8 },
+  lv: { name: '葉', base: '#8C9473', dark: '#5E654B', light: '#B5BC9C', count: 8 },
+  vi: { name: '岩', base: '#8A8378', dark: '#5D574F', light: '#B3ADA2', count: 8 },
+  dw: { name: '水', base: '#4D7C7D', dark: '#2E5354', light: '#7FA6A4', count: 7 },
+  mu: { name: '茸', base: '#A95F4A', dark: '#743D2F', light: '#CD8D76', count: 7 },
+  fr: { name: '木の実', base: '#9C7650', dark: '#6B4F34', light: '#C4A27C', count: 6 },
+  fl: { name: '花', base: '#C0954A', dark: '#8A6630', light: '#DDBD7E', count: 6 },
+  ms: { name: '苔', base: '#5D6B40', dark: '#3C4729', light: '#8C9A68', count: 5 },
   fi: { name: '火' },
   mo: { name: '月' },
   su: { name: '太陽' },
 };
 const CATEGORIES = [...SPECIES, ...POWERS];
-const POWER_ICON_COLOR = '#EFE7D4';
+const IV = '#EFE7D4'; // アイボリー（見本帳の IV）
+const POWER_ICON_COLOR = IV;
 
 // INFO の色を CSS 変数に流す（style.css が参照する --sp-base / --sp-dark / --sp-light など）
 SPECIES.forEach((k) => {
@@ -64,27 +65,135 @@ SPECIES.forEach((k) => {
   document.documentElement.style.setProperty(`--${k}-light`, INFO[k].light);
 });
 
-// プレイヤーの原石の色も同じくすみ系統から、見分けやすい 4 色
-const PLAYER_COLORS = ['#4C8A8F', '#B9923A', '#B9637D', '#7D6396'];
+// プレイヤーの原石の色。P1・P2 は見本帳どおり、3・4 人目は同じくすみのトーンを足す
+const PLAYER_COLORS = ['#7E3B3F', '#3E5F7A', '#8A6630', '#5E654B'];
 
-// ---- 記号（影絵）。1 か所に定義し、色とサイズだけ変えて使い回す ----
+// ---- 紋章（見本帳の E）。9 種の生き物は曲線の輪郭を数色で塗り分け、火・月・太陽は石板の印にする ----
+function dot(x, y, r) { return `M${x} ${y}m-${r} 0a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 -${2 * r} 0`; }
+function petals(n, len, wid, off) {
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = off + (i * 2 * Math.PI) / n;
+    const cx = Math.cos(a), sy = Math.sin(a);
+    const tx = 12 + len * cx, ty = 12 + len * sy;
+    const mx = 12 + len * 0.5 * cx, my = 12 + len * 0.5 * sy;
+    const px = -sy * wid, py = cx * wid;
+    d += `M12 12Q${(mx + px).toFixed(2)} ${(my + py).toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)}Q${(mx - px).toFixed(2)} ${(my - py).toFixed(2)} 12 12Z`;
+  }
+  return d;
+}
+function petalsAt(n, len, wid, off, ox, oy) {
+  return petals(n, len, wid, off).replace(/(-?\d+\.?\d*) (-?\d+\.?\d*)/g, (_, x, y) => `${(+x - 12 + ox).toFixed(2)} ${(+y - 12 + oy).toFixed(2)}`);
+}
+function rays(n, r1, r2) {
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = (i * 2 * Math.PI) / n;
+    d += `M${(12 + r1 * Math.cos(a)).toFixed(2)} ${(12 + r1 * Math.sin(a)).toFixed(2)}L${(12 + r2 * Math.cos(a)).toFixed(2)} ${(12 + r2 * Math.sin(a)).toFixed(2)}`;
+  }
+  return d;
+}
+// 太陽・月・火: アイボリーのコインの中に、縦長六角形の石板。印はそこに彫る
+function slab(sym, rayed) {
+  const STONE = '#8B887F', SIDE = '#69665E', CARVE = '#46443F', LIT = '#BDB9AE';
+  return [
+    { d: 'M12 2L19 6.5V17.5L12 22L5 17.5V6.5Z', f: STONE },
+    { d: 'M19 6.5V17.5L12 22V20.4L17.7 16.7V7.3ZM5 17.5L12 22V20.4L6.3 16.7Z', f: SIDE },
+    { d: sym(0.5), f: LIT, s: rayed ? LIT : 'none' },
+    { d: sym(0), f: CARVE, s: rayed ? CARVE : 'none' },
+  ];
+}
+const E = {
+  // 風: 触角のある、霧のような小さな精霊
+  sp: [
+    { d: 'M12 4.5c3.6 0 6 2.6 6 6.2 0 2.6-1.2 4.6-3 5.6 1 1.4 2.6 2.4 4.6 2.6-2.8 1.2-5.4.8-7-.6-1.6 1.6-4.2 2.2-7 1.4 2-.6 3.4-1.8 4-3.2C7.2 15.4 6 13.4 6 10.7c0-3.6 2.4-6.2 6-6.2z', f: 'C' },
+    { d: 'M10.2 5L8.6 2.2M13.8 5l1.6-2.8M1.6 9c1.2-.9 2.5-.9 3.6 0M18.8 13.4c1.2-.9 2.5-.9 3.6 0', s: 'C' },
+    { d: dot(10, 10.2, 1.1) + dot(14, 10.2, 1.1), f: 'I' },
+  ],
+  // 根: 細長い甲虫
+  br: [
+    { d: 'M12 4c2.4 0 3.6 2.6 3.6 5.6v5.8c0 3.6-1.6 6.1-3.6 6.1s-3.6-2.5-3.6-6.1V9.6C8.4 6.6 9.6 4 12 4z', f: 'C' },
+    { d: 'M8.6 10.5L5 8.5M8.4 13.6H4.4M8.6 16.6L5 19M15.4 10.5L19 8.5M15.6 13.6h4M15.4 16.6L19 19M10.6 4.6L9.2 2M13.4 4.6L14.8 2', s: 'C' },
+    { d: dot(10.8, 7, 0.9) + dot(13.2, 7, 0.9), f: 'I' },
+    { d: 'M12 10v10', s: 'I' },
+  ],
+  // 葉: 葉の翼をもつ小鳥
+  lv: [
+    { d: 'M3.5 15.5C3.5 10.5 7.5 7 12.5 7c4 0 7 2.8 7 6.6 0 4-3.2 6.4-7.5 6.4H8l-4.5 2.2 1.8-3.6C4.2 17.8 3.5 16.8 3.5 15.5zM19.2 11.6l3.3 1.2-3 1.4z', f: 'C' },
+    { d: dot(16, 11.2, 1.1), f: 'I' },
+    { d: 'M7.5 15.5c2-3.4 5.5-4.6 8.6-3.2-1.8 3.4-5.2 4.6-8.6 3.2zM8.5 15.2l6.5-2.4', s: 'I' },
+  ],
+  // 岩: ずんぐりした岩の番人
+  vi: [
+    { d: 'M4.5 21l.8-9.2L8.6 5.5h6.8l3.3 6.3.8 9.2h-4.5v-3h-6v3z', f: 'C' },
+    { d: 'M8.6 11.5h2.2v1.4H8.6zM13.2 11.5h2.2v1.4h-2.2z', f: 'I' },
+    { d: 'M12 6l-.8 2.4 1.4 1.4M6.8 16.8h2', s: 'I' },
+  ],
+  // 水: 炎のような房の頭、葉の腕と葉の裾をもつ細身の精霊
+  dw: [
+    { d: 'M11.6 5.6C11 4.4 11.3 3 12.4 2c.1 1 .6 1.6 1.2 2-.1-.7.1-1.3.5-1.7.3 1.4-.1 2.6-1.3 3.5z'
+      + 'M12 4.9c1.4 0 2.3 1.1 2.3 2.4 0 1.4-1 2.6-2.3 3-1.3-.4-2.3-1.6-2.3-3 0-1.3.9-2.4 2.3-2.4z'
+      + 'M11.55 10h.9v1.3h-.9z'
+      + 'M12 11c1.3 0 2 .8 2 2 0 1-.4 1.8-1 2.4h-2c-.6-.6-1-1.4-1-2.4 0-1.2.7-2 2-2z'
+      + 'M10.5 11.5c-1.6.9-2.4 2.6-2.3 4.8.7-.9 1.4-2.2 2.1-3.7zM13.5 11.5c1.6.9 2.4 2.6 2.3 4.8-.7-.9-1.4-2.2-2.1-3.7z'
+      + 'M10.6 15C9.6 16.2 8.8 17.8 8.6 19.6L9.8 19L10.4 20L11.2 19.2L12 20L12.8 19.2L13.6 20L14.2 19L15.4 19.6C15.2 17.8 14.4 16.2 13.4 15Z'
+      + 'M10.9 19.8h.6v1.7l-1 .5-.2-.4.6-.3zM12.5 19.8h.6v1.4l.6.3-.2.4-1-.5z', f: 'C' },
+    { d: 'M11.85 15.6h.3v3.8h-.3zM10.9 16.3l.28.1-.9 2.4-.28-.1zM13.1 16.3l-.28.1.9 2.4.28-.1zM11.9 11.8h.2v2.8h-.2z', f: 'L' },
+    { d: dot(11.2, 7.5, 0.42) + dot(12.8, 7.5, 0.42), f: 'I' },
+  ],
+  // 茸: 歩くきのこ
+  mu: [
+    { d: 'M2.5 11.5a9.5 7.2 0 0 1 19 0zM8.6 11.5h6.8v5.6a3.4 3.4 0 0 1-6.8 0z', f: 'C' },
+    { d: 'M9.6 20.2L8.6 22M14.4 20.2l1 1.8', s: 'C' },
+    { d: dot(7.8, 8.6, 1.2) + dot(12.4, 6.4, 1.1) + dot(16.4, 9, 1) + dot(10.6, 14.4, 0.9) + dot(13.4, 14.4, 0.9), f: 'I' },
+  ],
+  // 木の実: どんぐりの子
+  fr: [
+    { d: 'M4.5 9.2c0-3.6 3.3-5.7 7.5-5.7s7.5 2.1 7.5 5.7zM6.2 9.2h11.6c0 6.2-2.6 11.3-5.8 11.3S6.2 15.4 6.2 9.2z', f: 'C' },
+    { d: 'M12 3.5c0-1 .6-1.8 1.6-2', s: 'C' },
+    { d: 'M6.5 7.6h11M9 5.2l1 2.4M15 5.2l-1 2.4', s: 'I' },
+    { d: dot(10, 12.8, 1) + dot(14, 12.8, 1), f: 'I' },
+  ],
+  // 花: 花の妖精
+  fl: [
+    { d: petalsAt(6, 6.8, 2.8, 0, 12, 9), f: 'C' },
+    { d: 'M12 15.6V22M12 19.5c-1.8-.4-3-1.6-3.6-3.2M12 18.2c1.8-.4 3-1.6 3.6-3.2', s: 'C' },
+    { d: dot(12, 9, 2.6), f: 'I' },
+    { d: dot(11.1, 8.7, 0.55) + dot(12.9, 8.7, 0.55), f: 'C' },
+  ],
+  // 苔: 背に草が生えた大きな獣
+  ms: [
+    { d: 'M2.5 18c0-5.8 4.5-9.2 10-9.2 5 0 9 2.8 9 7.6V18h-2.4v2.6h-2.6V18H9.4v2.6H6.8V18z', f: 'C' },
+    { d: 'M8 9.2V5.4M8 6.8c-1.2-1.4-2.8-1.4-3.6-.8M8 6.8c1.2-1.6 2.8-1.4 3.6-.8M13.5 8.9V6.6c.9-1 2-1.1 2.8-.6', s: 'C' },
+    { d: dot(17.2, 13.2, 1), f: 'I' },
+    { d: dot(7, 13.2, 0.7) + dot(10, 12, 0.6) + dot(12.6, 14, 0.6), f: 'I' },
+  ],
+  fi: slab((dy) => `M12 ${7.4 + dy}c.5 2 3.2 3 3.2 5.8a3.2 3.2 0 0 1-6.4 0c0-1.5.9-2.5 1.6-3.1 0 1 .4 1.7 1 1.9-.2-1.5.1-3 .6-4.6z`, false),
+  mo: slab((dy) => `M13.4 ${7.6 + dy}a4.6 4.6 0 1 0 3 6.6a3.6 3.6 0 0 1-3-6.6z`, false),
+  su: slab((dy) => dot(12, 12 + dy, 2.2) + rays(8, 3.4, 4.8).replace(/(\d+\.\d+) (\d+\.\d+)/g, (_, x, y) => `${x} ${(+y + dy).toFixed(2)}`), true),
+};
+const EMPTY_SLOT = { d: 'M0 0', f: 'none', s: 'none' };
+// 'C' は精霊の色、'I' はアイボリー、'L' は light、'#...' はそのまま、slab() は色を自分で持つ
+function slotsOf(key, color) {
+  const pick = (v) => (v && v[0] === '#' ? v : v === 'C' ? color : v === 'I' ? IV : v === 'L' ? INFO[key].light : 'none');
+  const s = E[key].map((p) => ({ d: p.d, f: pick(p.f), s: pick(p.s) }));
+  return [0, 1, 2, 3].map((i) => s[i] || EMPTY_SLOT);
+}
+function embPathsHtml(key) {
+  const color = SPECIES.includes(key) ? INFO[key].dark : null; // 火・月・太陽は slab() が自分で色を持つので使わない
+  return slotsOf(key, color).map((p) => `<path d="${p.d}" fill="${p.f}" stroke="${p.s}"/>`).join('');
+}
+// 集計表・メッセージで使う、紋章だけの小さいアイコン（コインなし）
 const SYMBOLS = {
-  sp: '<path d="M12 4a6.5 6.5 0 1 1-6.2 8.3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M9.3 10.2a2.4 2.4 0 1 0 2.4-2.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
-  br: '<path d="M12 21V9M12 13l-5-4M12 11l5-5M12 15.5l4-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
-  lv: '<path d="M12 3c5 2 7 7 5 12-5 2-10 0-12-5C7 7 9 4 12 3z" fill="currentColor"/><path d="M12 5v14" stroke="currentColor" stroke-opacity="0.35" stroke-width="1.3" fill="none"/>',
-  vi: '<polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5" fill="currentColor"/>',
-  dw: '<path d="M12 3c3.2 4.2 6 8.2 6 11.2a6 6 0 1 1-12 0C6 11.2 8.8 7.2 12 3z" fill="currentColor"/>',
-  mu: '<path d="M4 13a8 8 0 0 1 16 0z" fill="currentColor"/><rect x="10.3" y="13" width="3.4" height="5.5" rx="1.2" fill="currentColor"/>',
-  fr: '<path d="M8 10.2a4 4 0 0 1 8 0c0 1-.3 1.8-.8 2.6-.5.8-.8 2.6-1.7 3.8-.9 1.1-2.1 1.1-3 0-.9-1.2-1.2-3-1.7-3.8-.5-.8-.8-1.6-.8-2.6z" fill="currentColor"/><path d="M6.3 9.4c1.2-1.8 3.2-2.7 5.7-2.7s4.5.9 5.7 2.7c-2-.5-3.9-.8-5.7-.8s-3.7.3-5.7.8z" fill="currentColor"/>',
-  fl: Array.from({ length: 5 }).map((_, i) => `<ellipse cx="12" cy="6.6" rx="2.5" ry="4" fill="currentColor" transform="rotate(${i * 72} 12 12)"/>`).join('') + '<circle cx="12" cy="12" r="2" fill="currentColor"/>',
-  ms: '<circle cx="8.2" cy="15" r="3" fill="currentColor"/><circle cx="14.4" cy="15.8" r="2.5" fill="currentColor"/><circle cx="11.2" cy="10.2" r="2.7" fill="currentColor"/>',
-  su: '<circle cx="12" cy="12" r="4" fill="currentColor"/>' + Array.from({ length: 8 }).map((_, i) => `<line x1="12" y1="2.2" x2="12" y2="5.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" transform="rotate(${i * 45} 12 12)"/>`).join(''),
-  mo: '<path fill-rule="evenodd" clip-rule="evenodd" d="M12 3a9 9 0 1 0 0 18c-3.2-1.6-5.3-5.2-5.3-9S8.8 4.6 12 3z" fill="currentColor"/>',
-  fi: '<path d="M12 2c1.1 3-1 4.2-1 6.3 1-.5 2-1.6 2-3.2 2.1 2.1 3.4 5 3.4 8a6.4 6.4 0 1 1-12.8 0c0-2 .9-4 2.4-5.6-.2 1 .3 2 1 2C7.4 7.2 9.7 4.1 12 2z" fill="currentColor"/>',
   plus: '<path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z" fill="currentColor"/>',
 };
 function svgIcon(key, color, size = 20) {
-  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="color:${color}" aria-hidden="true">${SYMBOLS[key]}</svg>`;
+  if (key === 'plus') return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" style="color:${color}" aria-hidden="true">${SYMBOLS.plus}</svg>`;
+  return `<svg viewBox="0 0 24 24" width="${size}" height="${size}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${embPathsHtml(key)}</svg>`;
+}
+// アイボリーの紋章コイン。細い輪 + 紙の粒子（grain フィルタ）
+function coinHtml(key, size = 22) {
+  return `<span class="coin" style="width:${size}px;height:${size}px">${coinInnerSvg(key)}</span>`;
 }
 let gemSeq = 0;
 function gemSvg(color, size = 20) {
@@ -98,22 +207,39 @@ function gemSvg(color, size = 20) {
     <polygon points="12,2.5 18.5,8 17,20 7,20 5.5,8" fill="url(#${id})" stroke="rgba(255,255,255,0.55)" stroke-width="0.6"/>
   </svg>`;
 }
-function tokenDiscHtml(key, size = 22) {
-  const color = SPECIES.includes(key) ? `var(--${key}-dark)` : '#5C5346';
-  return `<span class="token-disc" style="width:${size}px;height:${size}px">${svgIcon(key, color, Math.round(size * 0.62))}</span>`;
+// 裏向きの恩恵トークン（見本帳どおり）。アイボリーの輪に、六角形の印
+function tokenBackHtml() {
+  return `<span class="tile__token" aria-hidden="true">
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10.5" fill="none" stroke="#6B4F34" stroke-width="0.6"/>
+      <circle cx="12" cy="12" r="7.5" fill="none" stroke="#6B4F34" stroke-width="0.4" stroke-dasharray="1.2 1.2"/>
+      <path d="M12 6.5L16.8 9.25V14.75L12 17.5L7.2 14.75V9.25Z" fill="#9C7650" opacity="0.8"/>
+      <rect width="24" height="24" filter="url(#grain)"/>
+    </svg>
+  </span>`;
 }
-// 地紋: 角ばった葉を重ねた 1 つの形を、その精霊の 3 色だけで塗り分けて使い回す
-function tilePatternSvg(sp, tileId) {
-  const { base, dark, light } = INFO[sp];
-  const pid = `pat${tileId}`;
-  return `<svg class="tile__pattern-svg" viewBox="0 0 90 120" preserveAspectRatio="none" aria-hidden="true">
-    <defs><pattern id="${pid}" width="30" height="34" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
-      <rect width="30" height="34" fill="${base}"/>
-      <polygon points="15,3 26,17 15,31 4,17" fill="${dark}" opacity="0.55"/>
-      <polygon points="15,11 21,17 15,24 9,17" fill="${light}" opacity="0.55"/>
-    </pattern></defs>
-    <rect width="90" height="120" fill="url(#${pid})"/>
-    ${sp === 'fl' ? `<path d="M8 104 C 28 86, 18 54, 44 44 S 68 22, 82 8" fill="none" stroke="${dark}" stroke-width="2.2" opacity="0.55"/>` : ''}
+function tokenDiscHtml(key, size = 22) {
+  return coinHtml(key === 'plus' ? 'plus' : key, size);
+}
+// 札の地紋（見本帳どおり）: 角ばった葉の重なり + 縦線とひし形の線 + 星の点 + 紙の粒子
+function tilePatternSvg() {
+  return `<svg class="tile__pattern-svg" viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M-10 30C10 10 30 8 46 -6C40 20 22 34 -10 30Z" fill="var(--t-light)" opacity="0.35"/>
+    <path d="M20 -4C26 8 24 20 12 28C8 16 12 6 20 -4Z" fill="var(--t-dark)" opacity="0.32"/>
+    <path d="M70 10C50 14 36 34 40 60C54 46 64 30 70 10Z" fill="var(--t-dark)" opacity="0.35"/>
+    <path d="M52 -6C46 6 50 16 64 20C62 8 58 0 52 -6Z" fill="var(--t-light)" opacity="0.3"/>
+    <path d="M4 70C2 54 10 42 26 38C24 54 18 64 4 70Z" fill="var(--t-light)" opacity="0.3"/>
+    <path d="M-8 50C2 40 14 40 22 48C12 54 2 56 -8 50Z" fill="var(--t-dark)" opacity="0.28"/>
+    <path d="M-6 92C4 66 24 56 50 58C36 72 18 86 -6 92Z" fill="var(--t-dark)" opacity="0.3"/>
+    <path d="M64 96C50 84 46 66 56 48C64 62 68 80 64 96Z" fill="var(--t-light)" opacity="0.32"/>
+    <path d="M26 56C34 50 44 50 50 58C42 64 32 64 26 56Z" fill="var(--t-light)" opacity="0.22"/>
+    <circle cx="44" cy="72" r="8" fill="var(--t-dark)" opacity="0.22"/>
+    <circle cx="14" cy="80" r="6" fill="var(--t-light)" opacity="0.18"/>
+    <path d="M60 92C56 78 56 64 58 50M-6 28C10 20 26 12 42 -2M6 68C10 56 16 46 24 40" fill="none" stroke="var(--t-light)" stroke-width="0.3" opacity="0.6"/>
+    <path d="M10 40C20 46 26 56 24 70M34 8C42 14 46 24 44 34" fill="none" stroke="#EFE7D4" stroke-width="0.25" stroke-dasharray="0.6 0.9" opacity="0.4"/>
+    <path d="M30 0V90M8.4 54V81M51.6 54V81M0 22L30 43L60 22M0 64L30 43L60 64M8.4 54L30 43L51.6 54M30 0L60 18M30 0L0 18" fill="none" stroke="#EFE7D4" stroke-width="0.22" opacity="0.4"/>
+    <path d="M30 41l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5zM8.4 52.6l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4zM51.6 52.6l.4 1 1 .4-1 .4-.4 1-.4-1-1-.4 1-.4z" fill="#EFE7D4" opacity="0.75"/>
+    <rect width="60" height="90" filter="url(#grain)"/>
   </svg>`;
 }
 
@@ -416,9 +542,20 @@ function dotsHtml(players) {
 const stage = document.getElementById('stage');
 
 function tileBadgesHtml(tile) {
-  const sp = speciesOf(tile);
-  const dark = `var(--${sp}-dark)`;
-  return `<span class="tile__badges">${tile.marks.map((m) => `<span class="tile__badge">${svgIcon(m, dark, 15)}</span>`).join('')}</span>`;
+  const single = tile.marks.length === 1 ? ' single' : '';
+  return `<span class="tile__badges${single}">${tile.marks.map((m) => `<span class="tile__badge">${coinInnerSvg(m)}</span>`).join('')}</span>`;
+}
+// coinHtml は <span class="coin"> で包むが、札の紋章は .tile__badge が同じ役目を持つので中身の svg だけ使う
+function coinInnerSvg(key) {
+  // '＋' は生き物の紋章ではなく、原石を 1 個取り戻せるおまけの印
+  const inner = key === 'plus'
+    ? `<path d="M11.1 8h1.8v3.1h3.1v1.8h-3.1v3.1h-1.8v-3.1H8v-1.8h3.1z" fill="#5C5045"/>`
+    : `<g transform="translate(3.6 3.6) scale(0.7)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${embPathsHtml(key)}</g>`;
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="10.8" fill="none" stroke="#5C5045" stroke-width="0.5" opacity="0.75"/>
+    ${inner}
+    <rect width="24" height="24" filter="url(#grain)"/>
+  </svg>`;
 }
 
 function render() {
@@ -439,12 +576,14 @@ function render() {
         const destable = G.pendingAction === 'move-dest' && t.gem == null;
         const active = clickable || selectable || placeable || destable;
         const sp = speciesOf(t);
-        return `<button class="tile ${active ? 'active' : 'dim'}" data-id="${t.id}" ${active ? '' : 'disabled'}>
-          <span class="tile__bg">${tilePatternSvg(sp, t.id)}</span>
+        const { base, dark, light } = INFO[sp];
+        const tileStyle = `background:${base};--t-dark:${dark};--t-light:${light}`;
+        return `<button class="tile ${active ? 'active' : 'dim'}" style="${tileStyle}" data-id="${t.id}" ${active ? '' : 'disabled'}>
+          <span class="tile__bg">${tilePatternSvg()}</span>
           ${tileBadgesHtml(t)}
           <span class="tile__num">${SPECIES_TOTAL[sp]}</span>
           ${t.gem != null ? `<span class="tile__gem ${t.id === G.lastGemTile ? 'tile__gem--new' : ''}">${gemSvg(PLAYER_COLORS[t.gem], 18)}</span>` : ''}
-          ${t.token ? '<span class="tile__token">?</span>' : ''}
+          ${t.token ? tokenBackHtml() : ''}
         </button>`;
       }).join('')}
     </div>`).join('');
@@ -484,7 +623,10 @@ function render() {
 
   stage.innerHTML = `
     <div class="game">
-      <p class="turn" style="color:${PLAYER_COLORS[G.current]}">${gemSvg(PLAYER_COLORS[G.current], 18)}P${G.current + 1} の番</p>
+      <div class="turn-row">
+        <button class="pill back-btn" id="btn-back" aria-label="最初の画面に戻る">戻る</button>
+        <p class="turn" style="color:${PLAYER_COLORS[G.current]}">${gemSvg(PLAYER_COLORS[G.current], 18)}P${G.current + 1} の番</p>
+      </div>
       <div class="forest">${rowsHtml}</div>
       ${actions}
       ${G.message ? `<p class="msg">${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message}</p>` : ''}
@@ -504,12 +646,23 @@ function render() {
   by('btn-move')?.addEventListener('click', startMove);
   by('btn-plus')?.addEventListener('click', usePlus);
   by('btn-end')?.addEventListener('click', endTurn);
+  by('btn-back')?.addEventListener('click', () => goSetup(true));
+}
+
+// スタート画面に戻る。対局の途中なら確認する
+function goSetup(confirmFirst) {
+  if (confirmFirst && !confirm('ゲームをやめて最初の画面に戻りますか？')) return;
+  G = null;
+  render();
 }
 
 function renderSetup() {
+  const decoCoins = ['sp', 'dw', 'su', 'lv'];
   stage.innerHTML = `
     <div class="setup">
-      <h2>精霊たちの森</h2>
+      <p class="setup__kicker">SPIRITS OF THE FOREST</p>
+      <h2 class="setup__title">精霊たちの森</h2>
+      <div class="setup__coins">${decoCoins.map((k) => coinHtml(k, 44)).join('')}</div>
       <p>Spirits of the Forest を遊べる最小版。1 台を回して遊びます。</p>
       <p>人数を選んでください</p>
       <div class="row-actions">
@@ -545,9 +698,13 @@ function renderResult() {
         </tbody>
       </table>
       <p class="hint">${winners.length > 1 ? '引き分け: ' : '勝ち: '}${winners.map((p) => 'P' + (p + 1)).join('・')}</p>
-      <button class="pill pill--main" id="btn-again">もう一度</button>
+      <div class="row-actions">
+        <button class="pill pill--main" id="btn-again">もう一度</button>
+        <button class="pill" id="btn-result-back">最初の画面に戻る</button>
+      </div>
     </div>`;
   stage.querySelector('#btn-again').addEventListener('click', () => { G = null; render(); });
+  stage.querySelector('#btn-result-back').addEventListener('click', () => goSetup(false));
 }
 
 render();

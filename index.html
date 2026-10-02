@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#2E2F26">
+  <meta name="theme-color" content="#E9E0CA">
   <meta name="description" content="Spirits of the Forest を遊べる最小版">
   <title>spirit-forest — 森の精霊ボードゲーム</title>
 
@@ -31,7 +31,60 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
+  <!-- 紙の繊維・粒子のフィルタ。1 回だけ定義し、札・紋章コイン・背景が url(#grain) / url(#fiber) で使い回す -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="grain" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0.24  0 0 0 0 0.19  0 0 0 0 0.14  1.1 0 0 0 -0.42"/>
+      </filter>
+      <filter id="fiber" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.012 0.18" numOctaves="3" seed="4"/>
+        <feColorMatrix type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.38  0 0 0 0 0.28  0.5 0 0 0 -0.12"/>
+      </filter>
+      <filter id="mist" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="10"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 森の中の背景: 奥の木立が何層か霞んで重なり、手前に大きな葉、薄い霧がかかる -->
+  <div class="forest-bg" aria-hidden="true">
+    <svg viewBox="0 0 400 900" preserveAspectRatio="xMidYMid slice">
+      <rect width="400" height="900" fill="#E9E0CA"/>
+      <!-- 一番奥の木立（紫がかった霞） -->
+      <g opacity="0.16" fill="#6E6488">
+        <path d="M20 420 L60 300 L100 420 Z"/>
+        <path d="M80 440 L130 280 L180 440 Z"/>
+        <path d="M250 430 L300 290 L350 430 Z"/>
+        <path d="M330 450 L380 310 L430 450 Z"/>
+      </g>
+      <!-- 中間の木立（苔色） -->
+      <g opacity="0.22" fill="#5D6B40">
+        <path d="M-20 560 L40 380 L100 560 Z"/>
+        <path d="M60 580 L130 360 L200 580 Z"/>
+        <path d="M200 570 L270 370 L340 570 Z"/>
+        <path d="M310 590 L380 390 L420 590 Z"/>
+      </g>
+      <!-- 手前の木立（深い緑、もっとも濃い） -->
+      <g opacity="0.3" fill="#3C4729">
+        <path d="M-30 760 L50 520 L130 760 Z"/>
+        <path d="M100 780 L190 500 L280 780 Z"/>
+        <path d="M250 770 L330 510 L420 770 Z"/>
+      </g>
+      <!-- 薄い霧 -->
+      <ellipse cx="80" cy="560" rx="160" ry="36" fill="#EFE7D4" opacity="0.3" filter="url(#mist)"/>
+      <ellipse cx="320" cy="640" rx="180" ry="40" fill="#EFE7D4" opacity="0.25" filter="url(#mist)"/>
+      <!-- 手前の大きな葉 -->
+      <path d="M-30 900 C 40 760 120 720 200 620 C 160 760 120 860 -30 900 Z" fill="#3C4729" opacity="0.4"/>
+      <path d="M430 900 C 360 800 340 700 390 600 C 420 700 440 800 430 900 Z" fill="#2E5354" opacity="0.3"/>
+      <!-- 版画の細線（六角形と斜線）、紙の繊維と粒子 -->
+      <path d="M200 380L300 440V560L200 620L100 560V440Z M0 900L400 0 M0 450L400 450" fill="none" stroke="#5C5045" stroke-width="0.6" opacity="0.1"/>
+      <rect width="400" height="900" filter="url(#fiber)"/>
+      <rect width="400" height="900" filter="url(#grain)" opacity="0.5"/>
+    </svg>
+  </div>
+
   <main class="app">
     <header class="bar">
       <h1 class="bar__title">spirit-forest</h1>
