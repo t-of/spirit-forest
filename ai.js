@@ -14,7 +14,7 @@ const W = {
 // ponytail: 実際の分布は均等ではない。見積もりが大きく外れるようなら、もう少し賢い割り振りに変える。
 function knownTokenTotal(pl) {
   let n = 0;
-  for (const k in pl.tokens) if (k !== 'plus') n += pl.tokens[k] || 0;
+  for (const k in pl.tokens) if (k !== 'plus' && k !== '?') n += pl.tokens[k] || 0;
   return n;
 }
 
@@ -34,7 +34,8 @@ function projectCategory(state, p, c, self) {
     // 他人の原石が乗っている札はその人の取り分として扱い、ここでは数えない
   }));
   const pl = state.players[p];
-  const tokenPart = p === self ? (pl.tokens[c] || 0) : knownTokenTotal(pl) / CATEGORIES.length;
+  // '?' は先読みの中で取った裏向きトークン（14 枚のどれか分からないので 1/14 ずつ）
+  const tokenPart = p === self ? (pl.tokens[c] || 0) + (pl.tokens['?'] || 0) / 14 : knownTokenTotal(pl) / CATEGORIES.length;
   return { tileOnly, total: tileOnly + tokenPart };
 }
 
@@ -55,9 +56,12 @@ export function evaluate(state, player) {
 export function chooseMove(state, player, rng = Math.random) {
   const moves = legalMoves(state);
   if (!moves.length) return null;
+  // 森の裏向きトークンは見えないので、中身を伏せた複製で読む
+  const masked = clone(state);
+  masked.rows.forEach((row) => row.forEach((t) => { if (t.token) t.token = '?'; }));
   let best = null, bestValue = -Infinity;
   for (const move of moves) {
-    const after = clone(state);
+    const after = clone(masked);
     applyMove(after, move);
     const value = evaluate(after, player) + rng() * 1e-6; // 同点はごく僅かな乱数で割る
     if (value > bestValue) { bestValue = value; best = move; }
