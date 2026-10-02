@@ -591,19 +591,30 @@ function render() {
     </div>`).join('');
   G.lastGemTile = null; // 演出は 1 回の描画だけでよい
 
+  // 持っている札を、精霊ごとに重ねて並べる。多数派の山は金の縁
   const header = `
-    <table class="board">
-      <thead><tr><th></th>${G.players.map((_, p) => `<th class="${p === G.current ? 'cur' : ''}" style="color:${PLAYER_COLORS[p]}">${gemSvg(PLAYER_COLORS[p], 14)}P${p + 1}</th>`).join('')}<th class="lead-col">多数派</th></tr></thead>
-      <tbody>
-        ${CATEGORIES.map((c) => {
-          const { counts, leaders } = currentLeaders(c);
-          const iconColor = SPECIES.includes(c) ? `var(--${c}-dark)` : POWER_ICON_COLOR;
-          return `<tr><td class="cat">${svgIcon(c, iconColor, 16)}<span>${INFO[c].name}</span></td>${G.players.map((_, p) => `<td>${counts[p]}</td>`).join('')}<td class="lead-col">${dotsHtml(leaders)}</td></tr>`;
-        }).join('')}
-        <tr><td class="cat">原石</td>${G.players.map((pl2) => `<td>${pl2.gemsHand}</td>`).join('')}<td></td></tr>
-        <tr><td class="cat">${svgIcon('plus', POWER_ICON_COLOR, 16)}<span>＋</span></td>${G.players.map((pl2) => `<td>${pl2.tokens.plus || 0}</td>`).join('')}<td></td></tr>
-      </tbody>
-    </table>`;
+    <div class="hands">
+      ${G.players.map((pl2, p) => {
+        const mine = G.rows.flat().filter((t) => t.taken && t.owner === p);
+        const groups = SPECIES.map((sp) => mine.filter((t) => speciesOf(t) === sp)).filter((g) => g.length);
+        const tokens = Object.entries(pl2.tokens).filter(([, n]) => n > 0);
+        return `<section class="hand ${p === G.current ? 'cur' : ''}">
+          <h3 class="hand__name" style="color:${PLAYER_COLORS[p]}">${gemSvg(PLAYER_COLORS[p], 14)}P${p + 1}<span class="hand__gems">原石 ${pl2.gemsHand}</span></h3>
+          <div class="hand__cards">
+            ${groups.map((g) => {
+              const sp = speciesOf(g[0]);
+              const lead = currentLeaders(sp).leaders.includes(p) ? ' lead' : '';
+              return `<span class="hand__stack${lead}">${g.map((t) => {
+                const { base, dark, light } = INFO[sp];
+                return `<span class="tile tile--mini" style="background:${base};--t-dark:${dark};--t-light:${light}">
+                  <span class="tile__bg">${tilePatternSvg()}</span>${tileBadgesHtml(t)}<span class="tile__num">${SPECIES_TOTAL[sp]}</span></span>`;
+              }).join('')}</span>`;
+            }).join('') || '<span class="hand__empty">まだ札がありません</span>'}
+          </div>
+          ${tokens.length ? `<div class="hand__tokens">${tokens.map(([k, n]) => `<span class="hand__token">${coinHtml(k, 22)}${n > 1 ? `×${n}` : ''}</span>`).join('')}</div>` : ''}
+        </section>`;
+      }).join('')}
+    </div>`;
 
   let actions = '';
   if (canTake) {

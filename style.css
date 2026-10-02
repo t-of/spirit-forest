@@ -254,3 +254,18 @@ button { font: inherit; color: inherit; }
 @media (min-width: 700px) {
   .tile { width: 62px; }
 }
+
+/* ---- 手札（持っている札を精霊ごとに重ねて並べる） ---- */
+.hands { display: flex; flex-direction: column; gap: 8px; }
+.hand { padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(92, 80, 69, 0.2); }
+.hand.cur { border-color: rgba(201, 165, 90, 0.8); background: rgba(201, 165, 90, 0.08); }
+.hand__name { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 4px; }
+.hand__gems { margin-left: auto; font-size: 12px; font-weight: normal; color: var(--ink-faint); }
+.hand__cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 45px; align-items: flex-end; }
+.hand__stack { display: flex; padding: 2px; border-radius: 6px; }
+.hand__stack.lead { box-shadow: 0 0 0 1.5px var(--gold); }
+.hand__stack .tile--mini + .tile--mini { margin-left: -18px; }
+.tile.tile--mini { width: 30px; box-shadow: 0 1px 2px rgba(44, 38, 32, 0.35); }
+.hand__empty { font-size: 12px; color: var(--ink-faint); align-self: center; }
+.hand__tokens { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; }
+.hand__token { display: inline-flex; align-items: center; gap: 2px; }
