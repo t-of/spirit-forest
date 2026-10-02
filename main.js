@@ -91,12 +91,11 @@ const THEMES = {
 let theme = 'forest';
 try { theme = localStorage.getItem(STORE + 'theme') || 'forest'; } catch { /* 読めなくてもよい */ }
 if (!THEMES[theme]) theme = 'forest';
-function geoPoly(key) {
+function geoPoly(key, cx = 12, cy = 12, r = 9.5) {
   const [n, flip] = GEO_MARK[key];
-  const r = 9.5;
   return Array.from({ length: n }, (_, i) => {
     const a = -Math.PI / 2 + (flip * Math.PI) / n + (i * 2 * Math.PI) / n;
-    return `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}`;
+    return `${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
   }).join(' ');
 }
 // INFO の色と原石の色を差し替え、CSS 変数（--sp-base / --sp-dark / --sp-light など）に流す
@@ -281,13 +280,13 @@ function tokenDiscHtml(key, size = 22) {
   return coinHtml(key === 'plus' ? 'plus' : key, size);
 }
 // 札の地紋（見本帳どおり）: 角ばった葉の重なり + 縦線とひし形の線 + 星の点 + 紙の粒子
-function tilePatternSvg() {
-  // 幾何: 角の扇形・小さな三角・点の格子（ホーム画面の geo アイコンと同じ作り）
+function tilePatternSvg(sp) {
+  // 幾何: その精霊の多角形を大・中・小で重ね、点の格子を敷く（ホーム画面の geo アイコンと同じ作り）
   if (theme === 'geo') {
     return `<svg class="tile__pattern-svg" viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M60 0V34A34 34 0 0 1 26 0z" fill="var(--t-dark)"/>
-    <path d="M0 90V62A28 28 0 0 1 28 90z" fill="var(--t-light)"/>
-    <path d="M0 0H14L0 14z" fill="var(--t-light)"/>
+    <polygon points="${geoPoly(sp, 46, 74, 34)}" fill="var(--t-dark)"/>
+    <polygon points="${geoPoly(sp, 6, 8, 18)}" fill="none" stroke="var(--t-light)" stroke-width="3"/>
+    <polygon points="${geoPoly(sp, 10, 66, 7)}" fill="var(--t-light)"/>
     ${Array.from({ length: 12 }, (_, i) => `<circle cx="${7.5 + (i % 4) * 15}" cy="${7.5 + Math.floor(i / 4) * 30 + 15}" r="0.9" fill="#F4EEE1" opacity="0.35"/>`).join('')}
   </svg>`;
   }
@@ -658,7 +657,7 @@ function render() {
         const { base, dark, light } = INFO[sp];
         const tileStyle = `background:${base};--t-dark:${dark};--t-light:${light}`;
         return `<button class="tile ${active ? 'active' : 'dim'}" style="${tileStyle}" data-id="${t.id}" ${active ? '' : 'disabled'}>
-          <span class="tile__bg">${tilePatternSvg()}</span>
+          <span class="tile__bg">${tilePatternSvg(sp)}</span>
           ${tileBadgesHtml(t)}
           <span class="tile__num">${SPECIES_TOTAL[sp]}</span>
           ${t.gem != null ? `<span class="tile__gem ${t.id === G.lastGemTile ? 'tile__gem--new' : ''}">${gemSvg(PLAYER_COLORS[t.gem], 18)}</span>` : ''}
