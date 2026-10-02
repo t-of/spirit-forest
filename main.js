@@ -68,7 +68,7 @@ const GEO_MARK = {
   fr: [6, 0], fl: [6, 1], ms: [7, 0],
 };
 const GEO_INK = '#16182B';
-// 力の源（火・月・太陽）の色。精霊と見分けるため、こちらだけ墨の縁どりを付ける
+// 力の源（火・月・太陽）の円の色
 const GEO_POWER = { fi: '#E8202A', mo: '#3FA9F5', su: '#FFD000' };
 const THEMES = {
   forest: {
@@ -237,7 +237,7 @@ function embPathsHtml(key) {
   if (theme === 'geo') {
     return SPECIES.includes(key)
       ? `<polygon points="${geoPoly(key)}" fill="${INFO[key].base}"/>`
-      : `<circle cx="12" cy="12" r="8.5" fill="${GEO_POWER[key]}" stroke="${GEO_INK}" stroke-width="1.4"/>`;
+      : `<circle cx="12" cy="12" r="8.5" fill="${GEO_POWER[key]}"/>`;
   }
   const color = SPECIES.includes(key) ? INFO[key].dark : null; // 火・月・太陽は slab() が自分で色を持つので使わない
   return slotsOf(key, color).map((p) => `<path d="${p.d}" fill="${p.f}" stroke="${p.s}"/>`).join('');
