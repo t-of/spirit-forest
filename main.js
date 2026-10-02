@@ -278,7 +278,7 @@ function newGame(numPlayers) {
     gemsExcluded: 0,
     tokens: {}, // category -> 枚数（'plus' も含む）
     tilesTaken: 0,
-    cpu: cpuOn && i > 0,
+    cpu: playMode === 'watch' || (playMode === 'cpu' && i > 0),
   }));
 
   return {
@@ -644,6 +644,7 @@ function render() {
       <div class="forest">${rowsHtml}</div>
       ${actions}
       ${G.message ? `<p class="msg">${G.lastToken ? tokenDiscHtml(G.lastToken) : ''}${G.message}</p>` : ''}
+      ${G.players.some((x) => x.cpu) ? speedPillsHtml() : ''}
       ${header}
     </div>`;
 
@@ -661,6 +662,7 @@ function render() {
   by('btn-plus')?.addEventListener('click', usePlus);
   by('btn-end')?.addEventListener('click', endTurn);
   by('btn-back')?.addEventListener('click', () => goSetup(true));
+  bindSpeedPills(render);
   clearTimeout(cpuTimer);
   if (pl.cpu) cpuTimer = setTimeout(cpuStep, CPU_SPEEDS[cpuSpeed].ms);
 }
@@ -672,11 +674,27 @@ const CPU_SPEEDS = {
   fast: { label: '速い', ms: 150 },
   instant: { label: '一瞬', ms: 0 },
 };
-let cpuOn = false;
+// 遊び方: みんなで遊ぶ / P2 から先を CPU / 全員 CPU で観戦
+const PLAY_MODES = { human: 'みんなで遊ぶ', cpu: 'P2 から先を CPU', watch: '観戦（全員 CPU）' };
+let playMode = 'human';
 let cpuSpeed = 'normal';
 try { cpuSpeed = localStorage.getItem(STORE + 'cpuSpeed') || 'normal'; } catch { /* 読めなくてもよい */ }
 if (!CPU_SPEEDS[cpuSpeed]) cpuSpeed = 'normal';
 let cpuTimer = null;
+function speedPillsHtml() {
+  return `<div class="setup__speed" role="group" aria-label="CPU の速さ">
+    ${Object.entries(CPU_SPEEDS).map(([k, v]) => `<button class="pill ${k === cpuSpeed ? 'pill--on' : ''}" data-speed="${k}" aria-pressed="${k === cpuSpeed}">${v.label}</button>`).join('')}
+  </div>`;
+}
+function bindSpeedPills(redraw) {
+  stage.querySelectorAll('[data-speed]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      cpuSpeed = btn.dataset.speed;
+      try { localStorage.setItem(STORE + 'cpuSpeed', cpuSpeed); } catch { /* 保存できなくてもよい */ }
+      redraw();
+    });
+  });
+}
 const pickRandom = (a) => a[Math.floor(Math.random() * a.length)];
 
 function cpuStep() {
@@ -725,23 +743,20 @@ function renderSetup() {
       <h2 class="setup__title">精霊たちの森</h2>
       <div class="setup__coins">${decoCoins.map((k) => coinHtml(k, 44)).join('')}</div>
       <p>Spirits of the Forest を遊べる最小版。1 台を回して遊びます。</p>
-      <label class="setup__opt"><input type="checkbox" id="opt-cpu" ${cpuOn ? 'checked' : ''}> P2 から先を CPU にする（テスト用）</label>
-      <div class="setup__speed" role="group" aria-label="CPU の速さ">
-        ${Object.entries(CPU_SPEEDS).map(([k, v]) => `<button class="pill ${k === cpuSpeed ? 'pill--on' : ''}" data-speed="${k}" aria-pressed="${k === cpuSpeed}">${v.label}</button>`).join('')}
+      <div class="setup__speed" role="group" aria-label="遊び方">
+        ${Object.entries(PLAY_MODES).map(([k, v]) => `<button class="pill ${k === playMode ? 'pill--on' : ''}" data-mode="${k}" aria-pressed="${k === playMode}">${v}</button>`).join('')}
       </div>
+      <p class="setup__label">CPU の速さ</p>
+      ${speedPillsHtml()}
       <p>人数を選んでください</p>
       <div class="row-actions">
         ${[2, 3, 4].map((n) => `<button class="pill pill--main" data-n="${n}">${n} 人</button>`).join('')}
       </div>
     </div>`;
-  stage.querySelector('#opt-cpu').addEventListener('change', (e) => { cpuOn = e.target.checked; });
-  stage.querySelectorAll('[data-speed]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      cpuSpeed = btn.dataset.speed;
-      try { localStorage.setItem(STORE + 'cpuSpeed', cpuSpeed); } catch { /* 保存できなくてもよい */ }
-      renderSetup();
-    });
+  stage.querySelectorAll('[data-mode]').forEach((btn) => {
+    btn.addEventListener('click', () => { playMode = btn.dataset.mode; renderSetup(); });
   });
+  bindSpeedPills(renderSetup);
   stage.querySelectorAll('[data-n]').forEach((btn) => {
     btn.addEventListener('click', () => { G = newGame(Number(btn.dataset.n)); render(); });
   });
