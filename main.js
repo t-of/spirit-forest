@@ -814,4 +814,6 @@ function renderResult() {
   stage.querySelector('#btn-result-back').addEventListener('click', () => goSetup(false));
 }
 
+document.getElementById('btn-rules').addEventListener('click', () => document.getElementById('rules').showModal());
+
 render();

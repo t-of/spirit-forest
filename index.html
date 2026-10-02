@@ -89,6 +89,7 @@
     <header class="bar">
       <h1 class="bar__title">spirit-forest</h1>
       <div class="bar__actions">
+        <button class="pill" id="btn-rules" type="button">ルール</button>
         <button class="pill" data-wak="install" hidden>アプリにする</button>
         <button class="pill" data-wak="share">共有</button>
       </div>
@@ -97,6 +98,37 @@
     <section class="stage" id="stage">
       <!-- ここにゲーム本体 -->
     </section>
+
+    <dialog id="rules" class="rules" aria-labelledby="rules-title">
+      <h2 id="rules-title">ルール</h2>
+      <h3>目的</h3>
+      <p>森の札を取り合い、12 種のマーク（精霊 9 種・力の源 3 種）のそれぞれで一番多く集めた人が点を取ります。札の下の数字は、その精霊のマークが森全体にいくつあるかです。</p>
+      <h3>手番</h3>
+      <ol>
+        <li>どれかの列の<b>端</b>（左右）の札を 1 枚取る。精霊が 1 体の札なら、続けて<b>同じ精霊の 1 体の札</b>をもう 1 枚取ってもよい（最初の人の最初の手番は 1 枚だけ）。</li>
+        <li>原石を 1 回だけ使ってよい。手元にあれば空いた札に<b>置く</b>。手元になければ、森にある自分の原石を<b>動かす</b>。</li>
+        <li>「手番終了」で次の人へ。</li>
+      </ol>
+      <h3>原石</h3>
+      <ul>
+        <li>はじめに 2 人なら 3 個、3〜4 人なら 2 個持つ。</li>
+        <li>原石の乗った札は予約。<b>ほかの人の原石</b>がある札を取るには、自分の原石を 1 個払う（払った原石は除外され、相手の原石は相手に戻る）。</li>
+        <li>自分の原石がある札を取ると、原石は手元に戻る。</li>
+      </ul>
+      <h3>恩恵トークン</h3>
+      <ul>
+        <li>トークンの乗った札を取るともらえる。持ち主にしか見えない（みんなで遊ぶときは、自分の番に長押しで見る）。</li>
+        <li>マークのトークンは、そのマーク 1 つとして数える。「＋」は、除外した原石を 1 個手元に戻せる。</li>
+      </ul>
+      <h3>得点</h3>
+      <ul>
+        <li>札がすべてなくなったら終わり。</li>
+        <li>マークごとに、一番多い人がその数だけ点を取る（同数なら全員）。2 体の札は 2 つと数える。</li>
+        <li>札にそのマークが 1 つもないと −3 点（トークンは数えない）。</li>
+        <li>合計が同じなら、取った札が少ない人の勝ち。</li>
+      </ul>
+      <form method="dialog"><button class="pill pill--main">閉じる</button></form>
+    </dialog>
 
     <footer class="credit">
       <a href="/">T.OF...</a> のアプリ ・ <a href="https://t-of.github.io/contact/">問い合わせ</a>
