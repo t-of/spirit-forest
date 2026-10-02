@@ -251,9 +251,9 @@ button { font: inherit; color: inherit; }
   .score-row { animation: none; }
 }
 
-@media (min-width: 700px) {
-  .tile { width: 62px; }
-}
+/* 森の札は列の幅いっぱい（12 枚）に広げる。画面の高さに 4 段が収まる大きさまで。狭い画面では 54px で横に流す */
+.forest { container-type: inline-size; }
+.forest .tile { width: max(54px, min(calc((100cqw - 55px) / 12), calc((100dvh - 360px) / 6))); }
 
 /* ---- 手札（持っている札を精霊ごとに重ねて並べる） ---- */
 .hands { display: flex; flex-direction: column; gap: 8px; }
@@ -261,12 +261,12 @@ button { font: inherit; color: inherit; }
 .hand.cur { border-color: rgba(201, 165, 90, 0.8); background: rgba(201, 165, 90, 0.08); }
 .hand__name { margin: 0 0 4px; font-size: 13px; display: flex; align-items: center; gap: 4px; }
 .hand__gems { margin-left: auto; font-size: 12px; font-weight: normal; color: var(--ink-faint); }
-.hand__cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 45px; align-items: flex-start; }
+.hand__cards { display: flex; flex-wrap: wrap; gap: 8px; min-height: 69px; align-items: flex-start; }
 .hand__stack { display: flex; flex-direction: column; padding: 2px; border-radius: 6px; }
 .hand__stack.lead { box-shadow: 0 0 0 1.5px var(--gold); }
-/* 縦に重ね、下の札の上端（紋章）が見えるように 17px ずつずらす */
-.hand__stack .tile--mini + .tile--mini { margin-top: -28px; }
-.tile.tile--mini { width: 30px; box-shadow: 0 1px 2px rgba(44, 38, 32, 0.35); }
+/* 縦に重ね、下の札の上端（紋章）が見えるようにずらす */
+.hand__stack .tile--mini + .tile--mini { margin-top: -42px; }
+.tile.tile--mini { width: 46px; box-shadow: 0 1px 2px rgba(44, 38, 32, 0.35); }
 .hand__empty { font-size: 12px; color: var(--ink-faint); align-self: center; }
 .hand__tokens { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; }
 .hand__token { display: inline-flex; align-items: center; gap: 2px; }
@@ -282,7 +282,7 @@ button { font: inherit; color: inherit; }
 
 /* ---- 左 2/3 に森、右 1/3 に各プレイヤーの手札 ---- */
 .game {
-  max-width: 1280px;
+  max-width: 1600px;
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: 12px;
@@ -290,26 +290,21 @@ button { font: inherit; color: inherit; }
 }
 .game__main { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .game__side { min-width: 0; }
-@media (max-width: 599px) {
-  .game { gap: 6px; }
-  .game__side .hand { padding: 4px; }
-  .game__side .hand__name { font-size: 12px; flex-wrap: wrap; }
-  .game__side .hand__cards { gap: 4px; min-height: 36px; }
-  .tile.tile--mini { width: 24px; }
-  .hand__stack .tile--mini + .tile--mini { margin-top: -22px; }
+/* 狭い画面では森を上に全幅で、手札はその下に並べる */
+@media (max-width: 699px) {
+  .game { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .hands { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .tile.tile--mini { width: 38px; }
+  .hand__stack .tile--mini + .tile--mini { margin-top: -35px; }
 }
 
 /* 名前の下に、マークごとの数（札＋恩恵トークン）。12 種を 1 列に、いつも同じ並びで出す */
-.hand__counts { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 0; margin: 0 0 6px; }
-.hand__count { display: flex; align-items: center; justify-content: center; gap: 1px; min-width: 0; font-size: 12px; line-height: 1; font-variant-numeric: tabular-nums; }
-.hand__count .coin { flex: 0 1 16px; width: auto !important; height: auto !important; aspect-ratio: 1; min-width: 0; }
+.hand__counts { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; margin: 0 0 6px; }
+.hand__count { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
+/* 紋章の下に数字を置き、紋章は列の幅いっぱい（最大 30px） */
+.hand__count .coin { width: 100% !important; height: auto !important; max-width: 30px; aspect-ratio: 1; min-width: 0; }
 .hand__count.zero { opacity: 0.4; }
 .hand__count.lead b { color: var(--ink); box-shadow: inset 0 -2px 0 var(--gold); }
-/* 狭い幅では紋章の下に数字を置いて、1 列に収める */
-@media (max-width: 599px) {
-  .hand__count { flex-direction: column; font-size: 10px; gap: 1px; }
-  .hand__count .coin { flex: none; width: 100% !important; max-width: 14px; }
-}
 /* ほかの人の恩恵トークンは裏向き 1 枚 ＋ 枚数だけ */
 .hand__token--back .tile__token { position: static; margin: 0; width: 22px; height: 22px; }
 /* 自分の恩恵トークン（みんなで遊ぶとき）: 長押ししている間だけ、上に表を出す */
