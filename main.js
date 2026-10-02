@@ -58,15 +58,67 @@ const CATEGORIES = [...SPECIES, ...POWERS];
 const IV = '#EFE7D4'; // アイボリー（見本帳の IV）
 const POWER_ICON_COLOR = IV;
 
-// INFO の色を CSS 変数に流す（style.css が参照する --sp-base / --sp-dark / --sp-light など）
-SPECIES.forEach((k) => {
-  document.documentElement.style.setProperty(`--${k}-base`, INFO[k].base);
-  document.documentElement.style.setProperty(`--${k}-dark`, INFO[k].dark);
-  document.documentElement.style.setProperty(`--${k}-light`, INFO[k].light);
-});
-
 // プレイヤーの原石の色。P1・P2 は見本帳どおり、3・4 人目は同じくすみのトーンを足す
 const PLAYER_COLORS = ['#7E3B3F', '#3E5F7A', '#8A6630', '#5E654B'];
+
+// ---- デザインの切り替え: 森（版画ふう）/ 幾何（はっきりした色と正多角形のマーク） ----
+// 幾何のマーク: 正 3〜8 角形を 2 向きずつ（0 = 頂点が上、1 = π/n 回す）で 12 種
+const GEO_MARK = {
+  sp: [3, 0], br: [3, 1], lv: [4, 0], vi: [4, 1], dw: [5, 0], mu: [5, 1],
+  fr: [6, 0], fl: [6, 1], ms: [7, 0], fi: [7, 1], mo: [8, 0], su: [8, 1],
+};
+const GEO_INK = '#16182B';
+const THEMES = {
+  forest: {
+    paper: '#E9E0CA',
+    players: PLAYER_COLORS.slice(),
+    colors: Object.fromEntries(SPECIES.map((k) => [k, [INFO[k].base, INFO[k].dark, INFO[k].light]])),
+  },
+  geo: {
+    paper: '#F4EEE1',
+    players: ['#E4573D', '#2F57E0', '#F2B632', '#1E9E6A'],
+    colors: {
+      sp: ['#7446D8', '#5E33BD', '#8A5CF0'], br: ['#D63A7A', '#B02A62', '#EC6A9C'],
+      lv: ['#6FAE3A', '#558C2A', '#94C966'], vi: ['#5F6577', '#474C5C', '#80869A'],
+      dw: ['#2F57E0', '#2548C0', '#4C7BFF'], mu: ['#E4573D', '#C2402A', '#F07A62'],
+      fr: ['#9A5B2E', '#7A4620', '#B97C4C'], fl: ['#E89A1C', '#C47D0E', '#F2B632'],
+      ms: ['#1E9E6A', '#16825A', '#3CBB86'],
+    },
+  },
+};
+let theme = 'forest';
+try { theme = localStorage.getItem(STORE + 'theme') || 'forest'; } catch { /* 読めなくてもよい */ }
+if (!THEMES[theme]) theme = 'forest';
+function geoPoly(key) {
+  const [n, flip] = GEO_MARK[key];
+  const r = 9.5;
+  return Array.from({ length: n }, (_, i) => {
+    const a = -Math.PI / 2 + (flip * Math.PI) / n + (i * 2 * Math.PI) / n;
+    return `${(12 + r * Math.cos(a)).toFixed(2)} ${(12 + r * Math.sin(a)).toFixed(2)}`;
+  }).join(' ');
+}
+// INFO の色と原石の色を差し替え、CSS 変数（--sp-base / --sp-dark / --sp-light など）に流す
+function applyTheme(t) {
+  theme = t;
+  const T = THEMES[t];
+  SPECIES.forEach((k) => {
+    [INFO[k].base, INFO[k].dark, INFO[k].light] = T.colors[k];
+    document.documentElement.style.setProperty(`--${k}-base`, INFO[k].base);
+    document.documentElement.style.setProperty(`--${k}-dark`, INFO[k].dark);
+    document.documentElement.style.setProperty(`--${k}-light`, INFO[k].light);
+  });
+  T.players.forEach((c, i) => { PLAYER_COLORS[i] = c; });
+  document.documentElement.dataset.theme = t;
+  document.querySelector('meta[name="theme-color"]').content = T.paper;
+  const btn = document.getElementById('btn-theme');
+  btn.textContent = t === 'geo' ? '森にする' : '幾何にする';
+}
+applyTheme(theme);
+document.getElementById('btn-theme').addEventListener('click', () => {
+  applyTheme(theme === 'geo' ? 'forest' : 'geo');
+  try { localStorage.setItem(STORE + 'theme', theme); } catch { /* 保存できなくてもよい */ }
+  render();
+});
 
 // ---- 紋章（見本帳の E）。9 種の生き物は曲線の輪郭を数色で塗り分け、火・月・太陽は石板の印にする ----
 function dot(x, y, r) { return `M${x} ${y}m-${r} 0a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 -${2 * r} 0`; }
@@ -180,6 +232,7 @@ function slotsOf(key, color) {
   return [0, 1, 2, 3].map((i) => s[i] || EMPTY_SLOT);
 }
 function embPathsHtml(key) {
+  if (theme === 'geo') return `<polygon points="${geoPoly(key)}" fill="${SPECIES.includes(key) ? INFO[key].base : GEO_INK}"/>`;
   const color = SPECIES.includes(key) ? INFO[key].dark : null; // 火・月・太陽は slab() が自分で色を持つので使わない
   return slotsOf(key, color).map((p) => `<path d="${p.d}" fill="${p.f}" stroke="${p.s}"/>`).join('');
 }
@@ -223,6 +276,15 @@ function tokenDiscHtml(key, size = 22) {
 }
 // 札の地紋（見本帳どおり）: 角ばった葉の重なり + 縦線とひし形の線 + 星の点 + 紙の粒子
 function tilePatternSvg() {
+  // 幾何: 角の扇形・小さな三角・点の格子（ホーム画面の geo アイコンと同じ作り）
+  if (theme === 'geo') {
+    return `<svg class="tile__pattern-svg" viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M60 0V34A34 34 0 0 1 26 0z" fill="var(--t-dark)"/>
+    <path d="M0 90V62A28 28 0 0 1 28 90z" fill="var(--t-light)"/>
+    <path d="M0 0H14L0 14z" fill="var(--t-light)"/>
+    ${Array.from({ length: 12 }, (_, i) => `<circle cx="${7.5 + (i % 4) * 15}" cy="${7.5 + Math.floor(i / 4) * 30 + 15}" r="0.9" fill="#F4EEE1" opacity="0.35"/>`).join('')}
+  </svg>`;
+  }
   return `<svg class="tile__pattern-svg" viewBox="0 0 60 90" preserveAspectRatio="none" aria-hidden="true">
     <path d="M-10 30C10 10 30 8 46 -6C40 20 22 34 -10 30Z" fill="var(--t-light)" opacity="0.35"/>
     <path d="M20 -4C26 8 24 20 12 28C8 16 12 6 20 -4Z" fill="var(--t-dark)" opacity="0.32"/>

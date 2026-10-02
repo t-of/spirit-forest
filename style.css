@@ -324,3 +324,33 @@ button { font: inherit; color: inherit; }
 .rules p, .rules ol, .rules ul { margin: 0; }
 .rules ol, .rules ul { padding-left: 1.3em; }
 .rules form { margin-top: 16px; text-align: center; }
+
+/* ---- 幾何デザイン（html[data-theme="geo"]）: 生成りの地に点の格子、墨の文字、はっきりした色。粒子・森の背景は消す ---- */
+[data-theme="geo"] {
+  --paper: #F4EEE1;
+  --card: #FBF7EE;
+  --ink: #16182B;
+  --ink-soft: #16182B;
+  --ink-faint: #4A4D63;
+  --line: #16182B;
+  --gold: #F2B632;
+  --ivory: #F4EEE1;
+  --coin: #F4EEE1;
+  --token-bg: #F4EEE1;
+}
+[data-theme="geo"] body {
+  font-family: 'Avenir Next', 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+  background-image: radial-gradient(rgba(22, 24, 43, 0.12) 1.5px, transparent 1.6px);
+  background-size: 24px 24px;
+}
+[data-theme="geo"] .forest-bg,
+[data-theme="geo"] .tile::after,
+[data-theme="geo"] svg rect[filter] { display: none; }
+[data-theme="geo"] .game, [data-theme="geo"] .setup, [data-theme="geo"] .result {
+  background: rgba(251, 247, 238, 0.96);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+[data-theme="geo"] .tile { border-radius: 4px; box-shadow: 0 2px 0 var(--ink); }
+[data-theme="geo"] .tile__badge { box-shadow: none; }
+[data-theme="geo"] .tile__num { text-shadow: none; font-weight: 800; }
+[data-theme="geo"] .pill { border-width: 2px; font-weight: 600; }
