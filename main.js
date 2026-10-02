@@ -1,5 +1,7 @@
 'use strict';
 
+import * as Rules from './rules.js';
+
 // localStorage はほかのアプリと共有される（同じ t-of.github.io のため）。
 // キーは必ず 'spirit-forest.' で始める。今回は保存データなし（1 回の対局を遊ぶだけ）。
 const STORE = 'spirit-forest.';
@@ -33,28 +35,26 @@ function reducedMotion() {
   return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-// ---- ここからアプリ本体（ルール・得点は変えていない） ----
+// ---- ここからアプリ本体（ルール・得点は rules.js へ。ここは画面・音・演出だけ） ----
 
-// 精霊 9 種・力の源 3 種
-const SPECIES = ['sp', 'br', 'lv', 'vi', 'dw', 'mu', 'fr', 'fl', 'ms'];
-const POWERS = ['fi', 'mo', 'su'];
+// 精霊 9 種・力の源 3 種（本体は rules.js。ここでは色だけ持つ）
+const { SPECIES, POWERS, CATEGORIES } = Rules;
 // 色は 1 か所（ここ）だけで決め、起動時に CSS 変数へ流し込む（style.css は var(--xx-dark) 等を参照するだけ）。
 // Claude Design の見本帳（.audit/spirit-forest-design.dc.html）どおりの 9 系統
 const INFO = {
-  sp: { name: '風', base: '#6E6488', dark: '#4A4260', light: '#9C93B2', count: 10 },
-  br: { name: '根', base: '#94697F', dark: '#664457', light: '#BF9AAB', count: 8 },
-  lv: { name: '葉', base: '#8C9473', dark: '#5E654B', light: '#B5BC9C', count: 8 },
-  vi: { name: '岩', base: '#8A8378', dark: '#5D574F', light: '#B3ADA2', count: 8 },
-  dw: { name: '水', base: '#4D7C7D', dark: '#2E5354', light: '#7FA6A4', count: 7 },
-  mu: { name: '茸', base: '#A95F4A', dark: '#743D2F', light: '#CD8D76', count: 7 },
-  fr: { name: '木の実', base: '#9C7650', dark: '#6B4F34', light: '#C4A27C', count: 6 },
-  fl: { name: '花', base: '#C0954A', dark: '#8A6630', light: '#DDBD7E', count: 6 },
-  ms: { name: '苔', base: '#5D6B40', dark: '#3C4729', light: '#8C9A68', count: 5 },
-  fi: { name: '火' },
-  mo: { name: '月' },
-  su: { name: '太陽' },
+  sp: { name: Rules.NAMES.sp, base: '#6E6488', dark: '#4A4260', light: '#9C93B2', count: 10 },
+  br: { name: Rules.NAMES.br, base: '#94697F', dark: '#664457', light: '#BF9AAB', count: 8 },
+  lv: { name: Rules.NAMES.lv, base: '#8C9473', dark: '#5E654B', light: '#B5BC9C', count: 8 },
+  vi: { name: Rules.NAMES.vi, base: '#8A8378', dark: '#5D574F', light: '#B3ADA2', count: 8 },
+  dw: { name: Rules.NAMES.dw, base: '#4D7C7D', dark: '#2E5354', light: '#7FA6A4', count: 7 },
+  mu: { name: Rules.NAMES.mu, base: '#A95F4A', dark: '#743D2F', light: '#CD8D76', count: 7 },
+  fr: { name: Rules.NAMES.fr, base: '#9C7650', dark: '#6B4F34', light: '#C4A27C', count: 6 },
+  fl: { name: Rules.NAMES.fl, base: '#C0954A', dark: '#8A6630', light: '#DDBD7E', count: 6 },
+  ms: { name: Rules.NAMES.ms, base: '#5D6B40', dark: '#3C4729', light: '#8C9A68', count: 5 },
+  fi: { name: Rules.NAMES.fi },
+  mo: { name: Rules.NAMES.mo },
+  su: { name: Rules.NAMES.su },
 };
-const CATEGORIES = [...SPECIES, ...POWERS];
 const IV = '#EFE7D4'; // アイボリー（見本帳の IV）
 const POWER_ICON_COLOR = IV;
 
@@ -318,154 +318,41 @@ function tilePatternSvg(sp) {
   </svg>`;
 }
 
-// 48 枚の書き起こし（各行 12 枚、| で区切り、+ でマーク 2 つ）
-const TILE_TEXT = `
-sp|mu+mo|ms+fi|sp+su|fr+fi|dw+dw|lv+mo|vi+fi|ms+mo|lv|dw+dw|fr+fr
-sp+sp|ms+ms|br+fi|ms+su|vi+vi|fr+su|mu+mu|sp+sp|lv+fi|vi|br|br+su
-br+br|fl+mo|lv+su|vi+su|sp+sp|lv+lv|dw+fi|mu+fi|dw+su|fl+fl|vi+mo|sp+mo
-fl+fl|dw+mo|br+br|lv+lv|fl+su|mu+mu|fr+fi|sp+fi|vi+vi|br+mo|mu+su|fr+mo
-`.trim().split('\n').map((row) => row.trim().split('|').map((cell) => cell.split('+')));
+// 札の下の数字＝その精霊の記号が 48 枚全体にいくつあるか（風 10 … 苔 5）。ルール本体は rules.js。
+const SPECIES_TOTAL = Rules.SPECIES_TOTAL;
+const speciesOf = Rules.speciesOf;
+const isPair = Rules.isPair;
 
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-let G = null; // ゲーム状態（1 対局分）
+let G = null; // ゲーム状態（1 対局分。rules.js の状態 + 画面専用の項目を同じオブジェクトに持つ）
 
 function newGame(numPlayers) {
-  let id = 0;
-  const rows = TILE_TEXT.map((row) => row.map((marks) => ({ id: id++, marks, taken: false, gem: null, token: null })));
-
-  // 恩恵トークン 14 枚（精霊 9・力の源 3・「＋」2）から 8 枚を裏向きで、決まったマスへ V の字に乗せる
-  // 各段の左から 2・11、3・10、4・9、5・8 枚目（0 始まりの添字）
-  const tokens = shuffle([...CATEGORIES, 'plus', 'plus']).slice(0, 8);
-  const spots = [[1, 10], [2, 9], [3, 8], [4, 7]].flatMap((cols, r) => cols.map((c) => rows[r][c]));
-  spots.forEach((tile, i) => { tile.token = tokens[i]; });
-
-  const gemsEach = numPlayers <= 2 ? 3 : 2;
-  const players = Array.from({ length: numPlayers }, (_, i) => ({
-    gemsHand: gemsEach,
-    gemsExcluded: 0,
-    tokens: {}, // category -> 枚数（'plus' も含む）
-    tilesTaken: 0,
-    cpu: playMode === 'watch' || (playMode === 'cpu' && i > 0),
-  }));
-
-  return {
-    numPlayers,
-    rows,
-    players,
-    current: 0,
-    firstMove: true,
-    phase: 'take', // 'take'（1 枚目）→ 'take2'（続けて同じ精霊）→ 'gem'（原石の操作、任意）
-    firstSpecies: null, // take2 のときの対象精霊
-    takenCount: 0,
-    pendingAction: null, // null | 'place' | 'move-select' | 'move-dest'
-    moveFrom: null,
-    lastGemTile: null, // 直前に原石を置いた・動かした先のタイル id（演出用）
-    lastToken: null, // 直前に取った恩恵トークン（演出用）
-    message: '',
-    over: false,
-  };
+  const state = Rules.newGame(numPlayers);
+  state.players.forEach((p, i) => { p.cpu = playMode === 'watch' || (playMode === 'cpu' && i > 0); });
+  // 以下は画面専用（rules.js は読み書きしない）
+  state.pendingAction = null; // null | 'place' | 'move-select' | 'move-dest'
+  state.moveFrom = null;
+  state.lastGemTile = null; // 直前に原石を置いた・動かした先のタイル id（演出用）
+  state.lastToken = null; // 直前に取った恩恵トークン（演出用）
+  state.message = '';
+  state.gemActionDone = false;
+  return state;
 }
 
-function rowEnds(row) {
-  let l = -1, r = -1;
-  for (let i = 0; i < row.length; i++) if (!row[i].taken) { l = i; break; }
-  for (let i = row.length - 1; i >= 0; i--) if (!row[i].taken) { r = i; break; }
-  return { l, r };
-}
-
-function allEnds() {
-  // { tile, row, idx } の一覧（行ごとに 1〜2 個）
-  const out = [];
-  G.rows.forEach((row, r) => {
-    const { l, r: rr } = rowEnds(row);
-    if (l === -1) return;
-    out.push({ tile: row[l], row: r, idx: l });
-    if (rr !== l) out.push({ tile: row[rr], row: r, idx: rr });
-  });
-  return out;
-}
-
-// 札の下の数字＝その精霊の記号が 48 枚全体にいくつあるか（風 10 … 苔 5）
-const SPECIES_TOTAL = {};
-TILE_TEXT.flat(2).forEach((m) => { SPECIES_TOTAL[m] = (SPECIES_TOTAL[m] || 0) + 1; });
-
-function speciesOf(tile) { return tile.marks.find((m) => SPECIES.includes(m)); }
-function isPair(tile) { return tile.marks.length === 2 && SPECIES.includes(tile.marks[0]) && tile.marks[0] === tile.marks[1]; }
-
-// 現在のプレイヤーがこのタイルを取れるか。取れなければ理由を返す。
-function takeReason(tile) {
-  const pl = G.players[G.current];
-  if (tile.gem != null && tile.gem !== G.current) {
-    if (pl.gemsHand === 0 && !hasBoardGem(G.current)) return '自分の原石が残っていないので、他人の原石があるタイルは取れません';
-  }
-  if (G.phase === 'take2') {
-    if (speciesOf(tile) !== G.firstSpecies || isPair(tile)) return `同じ精霊（${INFO[G.firstSpecies].name}）の 1 体だけのタイルしか続けて取れません`;
-  }
-  return null;
-}
-
-function hasBoardGem(playerIdx) {
-  return G.rows.some((row) => row.some((t) => t.gem === playerIdx));
-}
-
-function payGemToTake(tile) {
-  const pl = G.players[G.current];
-  if (tile.gem == null) return;
-  if (tile.gem === G.current) {
-    pl.gemsHand++; // 自分の原石は手元に戻る
-    tile.gem = null;
-    return;
-  }
-  // 他人の原石：自分の原石を 1 個除外して払う
-  const owner = G.players[tile.gem];
-  owner.gemsHand++; // 相手の原石は相手の手元に戻る
-  tile.gem = null;
-  if (pl.gemsHand > 0) { pl.gemsHand--; pl.gemsExcluded++; return; }
-  for (const row of G.rows) {
-    for (const t of row) {
-      if (t.gem === G.current) { t.gem = null; pl.gemsExcluded++; return; }
-    }
-  }
-}
+function allEnds() { return Rules.allEnds(G); }
+function takeReason(tile) { return Rules.takeReason(G, tile); }
+function hasBoardGem(playerIdx) { return Rules.hasBoardGem(G, playerIdx); }
 
 function takeTile(tile) {
-  const reason = takeReason(tile);
-  if (reason) { G.message = reason; render(); return; }
-  payGemToTake(tile);
+  const r = Rules.takeTile(G, tile);
+  if (r.reason) { G.message = r.reason; render(); return; }
   beep(440);
-  tile.taken = true;
-  tile.owner = G.current;
-  G.players[G.current].tilesTaken++;
-  if (tile.token) {
-    const key = tile.token;
-    const pl = G.players[G.current];
-    pl.tokens[key] = (pl.tokens[key] || 0) + 1;
-    G.message = `恩恵トークン「${key === 'plus' ? '＋' : INFO[key].name}」を獲得`;
-    G.lastToken = key;
-    tile.token = null;
+  if (r.token) {
+    G.message = `恩恵トークン「${r.token === 'plus' ? '＋' : INFO[r.token].name}」を獲得`;
+    G.lastToken = r.token;
   } else {
     G.message = '';
     G.lastToken = null;
   }
-  G.takenCount++;
-
-  if (G.phase === 'take' && !isPair(tile) && !G.firstMove) {
-    G.phase = 'take2';
-    G.firstSpecies = speciesOf(tile);
-  } else {
-    G.phase = 'gem';
-  }
-  G.firstMove = false;
-
-  if (allTaken()) { finishGame(); return; }
   render();
 }
 
@@ -492,17 +379,11 @@ function animateTakeAndCommit(btnEl, tile) {
   anim.onfinish = () => { ghost.remove(); takeTile(tile); };
 }
 
-function allTaken() { return G.rows.every((row) => row.every((t) => t.taken)); }
-
-function skipTake() { G.phase = 'gem'; G.message = ''; render(); }
+function skipTake() { Rules.skipTake(G); G.message = ''; render(); }
 
 function usePlus() {
-  const pl = G.players[G.current];
-  if (!pl.tokens.plus) return;
-  if (pl.gemsExcluded <= 0) { G.message = '除外した原石がありません'; render(); return; }
-  pl.tokens.plus--;
-  pl.gemsExcluded--;
-  pl.gemsHand++;
+  const r = Rules.usePlus(G);
+  if (!r.ok) { if (r.reason) { G.message = r.reason; render(); } return; }
   render();
 }
 
@@ -529,9 +410,8 @@ function clickBoardTile(tile, btnEl) {
     return;
   }
   if (G.pendingAction === 'place') {
-    if (tile.taken || tile.gem != null) { G.message = '原石のないタイルに置いてください'; render(); return; }
-    G.players[G.current].gemsHand--;
-    tile.gem = G.current;
+    const r = Rules.placeGem(G, tile);
+    if (!r.ok) { if (r.reason) { G.message = r.reason; render(); } return; }
     G.pendingAction = null;
     G.gemActionDone = true;
     G.lastGemTile = tile.id;
@@ -547,9 +427,8 @@ function clickBoardTile(tile, btnEl) {
     return;
   }
   if (G.pendingAction === 'move-dest') {
-    if (tile.taken || tile.gem != null) { G.message = '空いているタイルへ動かしてください'; render(); return; }
-    G.moveFrom.gem = null;
-    tile.gem = G.current;
+    const r = Rules.moveGem(G, G.moveFrom, tile);
+    if (!r.ok) { if (r.reason) { G.message = r.reason; render(); } return; }
     G.pendingAction = null;
     G.moveFrom = null;
     G.gemActionDone = true;
@@ -561,45 +440,13 @@ function clickBoardTile(tile, btnEl) {
 
 function endTurn() {
   beep(260);
-  G.phase = 'take';
-  G.firstSpecies = null;
+  Rules.endTurn(G);
   G.pendingAction = null;
   G.moveFrom = null;
   G.message = '';
   G.lastToken = null;
   G.gemActionDone = false;
-  G.current = (G.current + 1) % G.numPlayers;
   render();
-}
-
-function finishGame() {
-  G.over = true;
-  G.score = computeScore();
-  render();
-}
-
-function computeScore() {
-  // 集計のため、各タイルに「誰が取ったか」を記録していなかったので、取得時に owner を持たせる。
-  const totals = G.players.map(() => ({}));
-  CATEGORIES.forEach((c) => G.players.forEach((_, p) => { totals[p][c] = 0; }));
-  G.rows.forEach((row) => row.forEach((tile) => {
-    if (tile.owner == null) return;
-    tile.marks.forEach((m) => { totals[tile.owner][m]++; });
-  }));
-  G.players.forEach((pl, p) => CATEGORIES.forEach((c) => { totals[p][c] += (pl.tokens[c] || 0); }));
-
-  const perCat = {};
-  const scores = G.players.map(() => 0);
-  CATEGORIES.forEach((c) => {
-    const tileOnly = G.players.map((_, p) => totals[p][c] - (G.players[p].tokens[c] || 0));
-    const penalized = G.players.map((_, p) => p).filter((p) => tileOnly[p] === 0);
-    penalized.forEach((p) => { scores[p] -= 3; });
-    const max = Math.max(...G.players.map((_, p) => totals[p][c]));
-    const winners = G.players.map((_, p) => p).filter((p) => totals[p][c] === max && max > 0);
-    winners.forEach((p) => { scores[p] += max; });
-    perCat[c] = { max, winners, penalized };
-  });
-  return { totals, scores, perCat };
 }
 
 // 恩恵トークンは持ち主にしか見せない（裏向きで持つ）。観戦なら全員、CPU 戦なら P1 に見せる。
