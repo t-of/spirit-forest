@@ -39,22 +39,23 @@ function reducedMotion() {
 const SPECIES = ['sp', 'br', 'lv', 'vi', 'dw', 'mu', 'fr', 'fl', 'ms'];
 const POWERS = ['fi', 'mo', 'su'];
 // 色は 1 か所（ここ）だけで決め、起動時に CSS 変数へ流し込む（style.css は var(--xx-dark) 等を参照するだけ）。
+// くすみ・ヴィンテージの 9 系統（青緑・茶・紫・灰褐・深青・朱・琥珀・ローズ・苔）に合わせた配色
 const INFO = {
-  sp: { name: '風', base: '#5E3F8F', dark: '#3F2766', light: '#8466B5', count: 10 },
-  br: { name: '根', base: '#8C4C99', dark: '#5F2E6B', light: '#B07ABD', count: 8 },
-  lv: { name: '葉', base: '#9DA383', dark: '#6C7258', light: '#C3C8AA', count: 8 },
-  vi: { name: '岩', base: '#6F6F6B', dark: '#4B4B48', light: '#959590', count: 8 },
-  dw: { name: '水', base: '#2C7C86', dark: '#1A5560', light: '#4FA5AD', count: 7 },
-  mu: { name: '茸', base: '#C2433C', dark: '#8E2A27', light: '#DE716A', count: 7 },
-  fr: { name: '木の実', base: '#7B5B40', dark: '#553C28', light: '#A1805F', count: 6 },
-  fl: { name: '花', base: '#E2A82E', dark: '#C0661F', light: '#F2C85A', count: 6 },
-  ms: { name: '苔', base: '#557F2F', dark: '#34541C', light: '#86A84A', count: 5 },
+  sp: { name: '風', base: '#3E6B6E', dark: '#294A4C', light: '#6B9A9B', count: 10 },
+  br: { name: '根', base: '#9C6B3A', dark: '#6B4725', light: '#BE9360', count: 8 },
+  lv: { name: '葉', base: '#7C6A8C', dark: '#534860', light: '#A796B3', count: 8 },
+  vi: { name: '岩', base: '#8A8070', dark: '#5C5346', light: '#B0A795', count: 8 },
+  dw: { name: '水', base: '#35526E', dark: '#223447', light: '#5E7D99', count: 7 },
+  mu: { name: '茸', base: '#AE5A42', dark: '#78392A', light: '#C8866F', count: 7 },
+  fr: { name: '木の実', base: '#B8822E', dark: '#7D571C', light: '#D1A85C', count: 6 },
+  fl: { name: '花', base: '#B06C83', dark: '#7A455A', light: '#CC98AB', count: 6 },
+  ms: { name: '苔', base: '#5C7246', dark: '#3C4C2E', light: '#8CA06F', count: 5 },
   fi: { name: '火' },
   mo: { name: '月' },
   su: { name: '太陽' },
 };
 const CATEGORIES = [...SPECIES, ...POWERS];
-const POWER_ICON_COLOR = '#F7F5EE';
+const POWER_ICON_COLOR = '#EFE7D4';
 
 // INFO の色を CSS 変数に流す（style.css が参照する --sp-base / --sp-dark / --sp-light など）
 SPECIES.forEach((k) => {
@@ -63,7 +64,8 @@ SPECIES.forEach((k) => {
   document.documentElement.style.setProperty(`--${k}-light`, INFO[k].light);
 });
 
-const PLAYER_COLORS = ['#35C9D3', '#C3D62B', '#F0507A', '#9B6BFF'];
+// プレイヤーの原石の色も同じくすみ系統から、見分けやすい 4 色
+const PLAYER_COLORS = ['#4C8A8F', '#B9923A', '#B9637D', '#7D6396'];
 
 // ---- 記号（影絵）。1 か所に定義し、色とサイズだけ変えて使い回す ----
 const SYMBOLS = {
@@ -97,7 +99,7 @@ function gemSvg(color, size = 20) {
   </svg>`;
 }
 function tokenDiscHtml(key, size = 22) {
-  const color = SPECIES.includes(key) ? `var(--${key}-dark)` : '#5a5a55';
+  const color = SPECIES.includes(key) ? `var(--${key}-dark)` : '#5C5346';
   return `<span class="token-disc" style="width:${size}px;height:${size}px">${svgIcon(key, color, Math.round(size * 0.62))}</span>`;
 }
 // 地紋: 角ばった葉を重ねた 1 つの形を、その精霊の 3 色だけで塗り分けて使い回す

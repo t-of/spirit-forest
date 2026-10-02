@@ -1,24 +1,30 @@
 :root {
-  --bg: #1E5E34;
-  --bg-dark: #163F24;
-  --fg: #F7F5EE;
-  --muted: #CFE3D3;
-  --glow: #FFE08A;
-  --badge: #F2F0EA;
-  --num-bg: #F7F5EE;
-  --token-bg: #E9E8E3;
+  /* 古い植物図鑑・版画のようなくすみ色。ネオン・原色は使わない */
+  --bg: #2E2F26;
+  --bg-dark: #1C1D16;
+  --fg: #EFE7D4;
+  --muted: #B9AD91;
+  --glow: #D29A50;
+  --badge: #EFE7D4;
+  --num-bg: #EFE7D4;
+  --token-bg: #D9CDAF;
+
+  /* 紙の繊維・インクのかすれを 1 枚の SVG ノイズで作り、各所で使い回す（軽さのため共通化） */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* 平面的な葉・枝・果実を版画の線で（背景に薄く重ねる） */
+  --botanical: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cg fill='none' stroke='rgba(239,231,212,0.07)' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M40 300 C 60 240 50 190 90 150 C 120 120 110 80 140 40'/%3E%3Cpath d='M90 150 C 70 140 50 145 30 160'/%3E%3Cpath d='M90 150 C 110 160 125 150 140 135'/%3E%3Cpath d='M140 40 C 150 55 170 55 180 40'/%3E%3Cellipse cx='230' cy='230' rx='26' ry='40' transform='rotate(25 230 230)'/%3E%3Cellipse cx='270' cy='190' rx='20' ry='32' transform='rotate(-10 270 190)'/%3E%3Ccircle cx='250' cy='250' r='4'/%3E%3C/g%3E%3C/svg%3E");
 
   /* 精霊の色は main.js の INFO から流し込まれる（--sp-base / --sp-dark / --sp-light など）。
-     ここでは JS 実行前のフォールバックだけ用意しておく。 */
-  --sp-base: #5E3F8F; --sp-dark: #3F2766; --sp-light: #8466B5;
-  --br-base: #8C4C99; --br-dark: #5F2E6B; --br-light: #B07ABD;
-  --lv-base: #9DA383; --lv-dark: #6C7258; --lv-light: #C3C8AA;
-  --vi-base: #6F6F6B; --vi-dark: #4B4B48; --vi-light: #959590;
-  --dw-base: #2C7C86; --dw-dark: #1A5560; --dw-light: #4FA5AD;
-  --mu-base: #C2433C; --mu-dark: #8E2A27; --mu-light: #DE716A;
-  --fr-base: #7B5B40; --fr-dark: #553C28; --fr-light: #A1805F;
-  --fl-base: #E2A82E; --fl-dark: #C0661F; --fl-light: #F2C85A;
-  --ms-base: #557F2F; --ms-dark: #34541C; --ms-light: #86A84A;
+     ここでは JS 実行前のフォールバックだけ用意しておく。くすみ色の 9 系統（青・茶・紫・灰褐・深青・朱・琥珀・ローズ・苔）。 */
+  --sp-base: #3E6B6E; --sp-dark: #294A4C; --sp-light: #6B9A9B;
+  --br-base: #9C6B3A; --br-dark: #6B4725; --br-light: #BE9360;
+  --lv-base: #7C6A8C; --lv-dark: #534860; --lv-light: #A796B3;
+  --vi-base: #8A8070; --vi-dark: #5C5346; --vi-light: #B0A795;
+  --dw-base: #35526E; --dw-dark: #223447; --dw-light: #5E7D99;
+  --mu-base: #AE5A42; --mu-dark: #78392A; --mu-light: #C8866F;
+  --fr-base: #B8822E; --fr-dark: #7D571C; --fr-light: #D1A85C;
+  --fl-base: #B06C83; --fl-dark: #7A455A; --fl-light: #CC98AB;
+  --ms-base: #5C7246; --ms-dark: #3C4C2E; --ms-light: #8CA06F;
 }
 
 * { box-sizing: border-box; }
@@ -30,12 +36,29 @@ body {
   color: var(--fg);
   font-family: system-ui, -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
   -webkit-tap-highlight-color: transparent;
-  /* 深緑のフェルトに、うっすら布目 */
+  /* 古紙のようなくすんだ森色。版画の葉・枝を大きく重ね、細い斜線をうっすら */
   background-color: var(--bg);
   background-image:
-    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.025) 0 2px, transparent 2px 6px),
+    var(--botanical),
+    repeating-linear-gradient(60deg, rgba(239, 231, 212, 0.025) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(-60deg, rgba(239, 231, 212, 0.02) 0 1px, transparent 1px 54px),
     radial-gradient(ellipse at top, var(--bg) 0%, var(--bg-dark) 100%);
+  background-size: 320px 320px, auto, auto, auto;
+  background-attachment: fixed, fixed, fixed, fixed;
 }
+
+/* 画面全体に重ねる、紙の繊維・インクムラ（1 枚の SVG ノイズを使い回す） */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: var(--grain);
+  background-size: 160px 160px;
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+.app { position: relative; z-index: 2; }
 button { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
@@ -106,16 +129,26 @@ button { font: inherit; color: inherit; }
   transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 }
 .tile:disabled { cursor: default; }
+/* シルクスクリーン風のインクムラ・粒子を札の上に軽く重ねる（共通の SVG ノイズを使い回す） */
+.tile::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: var(--grain);
+  background-size: 90px 90px;
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+  pointer-events: none;
+}
 .tile.dim { filter: brightness(0.55) saturate(0.7); transform: translateY(3px); box-shadow: none; }
 .tile.active {
   cursor: pointer;
   outline: 2px solid var(--glow);
-  box-shadow: 0 0 0 3px rgba(255, 224, 138, 0.35), 0 2px 8px rgba(255, 224, 138, 0.5);
+  box-shadow: 0 0 0 3px rgba(210, 154, 80, 0.4), 0 2px 8px rgba(210, 154, 80, 0.5);
   animation: tileGlow 1.8s ease-in-out infinite;
 }
 @keyframes tileGlow {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(255, 224, 138, 0.3), 0 2px 6px rgba(255, 224, 138, 0.4); }
-  50% { box-shadow: 0 0 0 4px rgba(255, 224, 138, 0.55), 0 2px 10px rgba(255, 224, 138, 0.7); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(210, 154, 80, 0.35), 0 2px 6px rgba(210, 154, 80, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(210, 154, 80, 0.6), 0 2px 10px rgba(210, 154, 80, 0.65); }
 }
 
 .tile__bg, .tile__pattern-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -162,9 +195,9 @@ button { font: inherit; color: inherit; }
   position: absolute; top: 50%; left: 50%;
   width: 24px; height: 24px; margin: -14px 0 0 -12px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #d9b46a, #8a6328);
-  border: 2px solid #f3e2b3;
-  color: #fff6dc; font-size: 13px; font-weight: bold; line-height: 20px; text-align: center;
+  background: radial-gradient(circle at 35% 30%, #EFE7D4, #B9AD91);
+  border: 2px solid #D9CDAF;
+  color: #2E2F26; font-size: 13px; font-weight: bold; line-height: 20px; text-align: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 .token-disc {
@@ -174,7 +207,7 @@ button { font: inherit; color: inherit; }
 }
 
 .row-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-.pill--main { background: var(--glow); color: #1c2b20; font-weight: bold; }
+.pill--main { background: var(--glow); color: var(--bg-dark); font-weight: bold; }
 .pill:disabled { opacity: 0.35; cursor: default; }
 
 /* ---- 集計表 ---- */
